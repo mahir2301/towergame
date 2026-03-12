@@ -197,7 +197,7 @@ MonoBehaviour:
     NearClipPlane: 0.3
     FarClipPlane: 1000
     Dutch: 0
-    ModeOverride: 1
+    ModeOverride: 0
     PhysicalProperties:
       GateFit: 2
       SensorSize: {x: 21.946, y: 16.002}
@@ -649,7 +649,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0cb2f4d4bc481b42aeed4c7263ab8a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  speed: 10
+  mainCamera: {fileID: 1745330854}
+  movementSpeed: 10
+  movementAcceleration: 20
+  rotationSpeed: 10
 --- !u!114 &1645609382
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -720,7 +723,7 @@ MonoBehaviour:
   UpdateMethod: 1
   BlendUpdateMethod: 1
   LensModeOverride:
-    Enabled: 1
+    Enabled: 0
     DefaultMode: 1
   DefaultBlend:
     Style: 1
