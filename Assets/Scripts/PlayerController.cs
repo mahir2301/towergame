@@ -1,4 +1,5 @@
 using Unity.Cinemachine;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -21,6 +22,11 @@ public class PlayerController : MonoBehaviour
     private float zoomSenisitivity;
     [SerializeField]
     private float zoomAcceleration;
+
+    [SerializeField]
+    private Tower tower;
+    [SerializeField]
+    private GridManager grid;
 
     private Rigidbody rigidBody;
     private Vector3 targetMovementVector;
@@ -67,7 +73,7 @@ public class PlayerController : MonoBehaviour
     {
         var mousePos = Mouse.current.position.ReadValue();
         var ray =  Camera.main.ScreenPointToRay(mousePos);
-        var groundPlane = new Plane(Vector3.up, rigidBody.position);
+        var groundPlane = new Plane(Vector3.up, 0);
 
         if (groundPlane.Raycast(ray, out float rayDistance))
         {
@@ -80,6 +86,18 @@ public class PlayerController : MonoBehaviour
             {
                 var targetRotation = Quaternion.LookRotation(lookDir);
                 rigidBody.MoveRotation(Quaternion.Slerp(rigidBody.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime));
+            }
+
+            var t = tower.GetComponent<Rigidbody>();
+            t.freezeRotation = true;
+
+            tower.SetValid(grid.IsTileAvailable(targetPoint));
+
+            t.position = grid.GridToWorld(grid.WorldToGrid(targetPoint));
+
+            if (Mouse.current.leftButton.IsPressed())
+            {
+                grid.TryPlaceTower(targetPoint, tower.gameObject);
             }
         }
     }
