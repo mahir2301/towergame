@@ -649,10 +649,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0cb2f4d4bc481b42aeed4c7263ab8a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  mainCamera: {fileID: 1745330854}
+  mainCamera: {fileID: 267404663}
   movementSpeed: 10
   movementAcceleration: 20
   rotationSpeed: 10
+  zoomMin: 3
+  zoomMax: 12
+  zoomSenisitivity: 50
+  zoomAcceleration: 10
 --- !u!114 &1645609382
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -698,7 +702,7 @@ GameObject:
   - component: {fileID: 1745330851}
   m_Layer: 0
   m_Name: CinemachineBrain
-  m_TagString: Untagged
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

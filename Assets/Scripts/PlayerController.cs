@@ -1,3 +1,4 @@
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -5,17 +6,26 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     [SerializeField]
-    private Camera mainCamera;
+    private CinemachineCamera mainCamera;
     [SerializeField]
     private float movementSpeed;
     [SerializeField]
     private float movementAcceleration;
     [SerializeField]
     private float rotationSpeed;
+    [SerializeField]
+    private float zoomMin;
+    [SerializeField]
+    private float zoomMax;
+    [SerializeField]
+    private float zoomSenisitivity;
+    [SerializeField]
+    private float zoomAcceleration;
 
     private Rigidbody rigidBody;
     private Vector3 targetMovementVector;
     private Vector3 currentMovementVector;
+    private float targetZoom;
 
     private Matrix4x4 IsoMatrix => Matrix4x4.Rotate(Quaternion.Euler(0, 45, 0));
 
@@ -23,6 +33,7 @@ public class PlayerController : MonoBehaviour
     {
         rigidBody = GetComponent<Rigidbody>();
         rigidBody.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        targetZoom = mainCamera.Lens.OrthographicSize;
     }
 
     private void OnMove(InputValue input)
@@ -39,6 +50,11 @@ public class PlayerController : MonoBehaviour
         HandleRotation();
     }
 
+    private void Update()
+    {
+        HandleZoom();
+    }
+
     private void HandleMovement()
     {
         currentMovementVector = Vector3.Lerp(currentMovementVector, targetMovementVector, movementAcceleration * Time.fixedDeltaTime);
@@ -50,7 +66,7 @@ public class PlayerController : MonoBehaviour
     private void HandleRotation()
     {
         var mousePos = Mouse.current.position.ReadValue();
-        var ray = mainCamera.ScreenPointToRay(mousePos);
+        var ray =  Camera.main.ScreenPointToRay(mousePos);
         var groundPlane = new Plane(Vector3.up, rigidBody.position);
 
         if (groundPlane.Raycast(ray, out float rayDistance))
@@ -66,5 +82,19 @@ public class PlayerController : MonoBehaviour
                 rigidBody.MoveRotation(Quaternion.Slerp(rigidBody.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime));
             }
         }
+    }
+
+
+    private void HandleZoom()
+    {
+        var scrollInput = Mouse.current.scroll.ReadValue().y;
+        
+        if (Mathf.Abs(scrollInput) > 0.01f)
+        {
+            targetZoom -= scrollInput * zoomSenisitivity * 0.01f;
+            targetZoom = Mathf.Clamp(targetZoom, zoomMin, zoomMax);
+        }
+
+        mainCamera.Lens.OrthographicSize= Mathf.Lerp(mainCamera.Lens.OrthographicSize, targetZoom, Time.deltaTime * zoomAcceleration);   
     }
 }
