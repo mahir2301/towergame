@@ -592,7 +592,6 @@ GameObject:
   - component: {fileID: 1414855567}
   - component: {fileID: 1414855568}
   - component: {fileID: 1414855569}
-  - component: {fileID: 1414855570}
   m_Layer: 0
   m_Name: GameGrid
   m_TagString: Untagged
@@ -645,23 +644,6 @@ MonoBehaviour:
   lineWidth: 0.02
   lineColor: {r: 1, g: 1, b: 1, a: 0.09803922}
   yOffset: 0.01
---- !u!114 &1414855570
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1414855566}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ad72c078a1b2c594f86220360c285af8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Managers.MapSetupManager
-  nodeCount: 3
-  minDistanceBetweenNodes: 5
-  nodeCapacity: 10
-  energyNodeConfig: []
-  gridManager: {fileID: 0}
 --- !u!1 &1645609375
 GameObject:
   m_ObjectHideFlags: 0
