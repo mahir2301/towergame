@@ -21,5 +21,6 @@ namespace Data
 
         [Header("Energy")]
         public int energyConsumption = 1;
+
     }
 }
