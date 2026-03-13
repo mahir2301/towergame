@@ -258,7 +258,6 @@ MonoBehaviour:
   gridManager: {fileID: 1414855568}
   mainCamera: {fileID: 1745330854}
   currentTowerConfig: {fileID: 11400000, guid: d5c79d52c90bb5b4ca06caeb4fd6ebf1, type: 2}
-  validColor: {r: 0, g: 1, b: 0, a: 0.5}
 --- !u!4 &297911098
 Transform:
   m_ObjectHideFlags: 0
@@ -462,6 +461,7 @@ GameObject:
   - component: {fileID: 1160422664}
   - component: {fileID: 1160422663}
   - component: {fileID: 1160422662}
+  - component: {fileID: 1160422665}
   m_Layer: 0
   m_Name: GroundPlane
   m_TagString: Untagged
@@ -563,6 +563,25 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1160422660}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1160422665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1160422660}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad72c078a1b2c594f86220360c285af8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Managers.MapSetupManager
+  nodeCount: 3
+  minDistanceBetweenNodes: 5
+  nodeCapacity: 10
+  energyNodeConfig:
+  - {fileID: 11400000, guid: 6b73cc5910000fa498835b9c3e3f1d85, type: 2}
+  - {fileID: 11400000, guid: 0283166f048741346acdd0952cfa2a10, type: 2}
+  gridManager: {fileID: 1414855568}
 --- !u!1 &1414855566
 GameObject:
   m_ObjectHideFlags: 0
@@ -574,6 +593,7 @@ GameObject:
   - component: {fileID: 1414855567}
   - component: {fileID: 1414855568}
   - component: {fileID: 1414855569}
+  - component: {fileID: 1414855570}
   m_Layer: 0
   m_Name: GameGrid
   m_TagString: Untagged
@@ -610,7 +630,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridManager
   gridSize: {x: 32, y: 32}
-  cellSize: 1
 --- !u!114 &1414855569
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -627,6 +646,23 @@ MonoBehaviour:
   lineWidth: 0.02
   lineColor: {r: 1, g: 1, b: 1, a: 0.09803922}
   yOffset: 0.01
+--- !u!114 &1414855570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1414855566}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad72c078a1b2c594f86220360c285af8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Managers.MapSetupManager
+  nodeCount: 3
+  minDistanceBetweenNodes: 5
+  nodeCapacity: 10
+  energyNodeConfig: []
+  gridManager: {fileID: 0}
 --- !u!1 &1645609375
 GameObject:
   m_ObjectHideFlags: 0

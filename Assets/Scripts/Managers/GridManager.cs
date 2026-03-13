@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using Components;
 using Data;
 using UnityEngine;
+using static UnityEngine.Rendering.STP;
 
 namespace Managers
 {
@@ -92,6 +94,37 @@ namespace Managers
         public bool IsCellOccupied(Vector2Int gridPos)
         {
             return occupiedCells.ContainsKey(gridPos);
+        }
+
+        public bool TryPlaceEnergyNode(Vector2Int gridPos, EnergyNodeConfig config, out GameObject instance)
+        {
+            instance = null;
+
+            if (config == null || config.energyNodePrefab == null)
+            {
+                Debug.LogError("TowerConfig or prefab is null!");
+                return false;
+            }
+
+            if (!IsCellAvailable(gridPos, config.gridSize))
+            {
+                return false;
+            }
+
+            var worldPos = GridToWorld(gridPos, config.gridSize);
+            instance = Instantiate(config.energyNodePrefab, worldPos, Quaternion.identity);
+
+            for (var x = 0; x < config.gridSize.x; x++)
+            {
+                for (var y = 0; y < config.gridSize.y; y++)
+                {
+                    occupiedCells[new Vector2Int(gridPos.x + x, gridPos.y + y)] = instance;
+                }
+            }
+
+            return true;
+
+
         }
     }
 }
