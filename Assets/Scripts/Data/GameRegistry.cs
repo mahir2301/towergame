@@ -35,5 +35,25 @@ namespace Data
                 .Select(UnityEditor.AssetDatabase.LoadAssetByGUID<T>)
                 .ToList();
         }
+
+        public TowerType GetTowerType(string id)
+        {
+            return towerTypes.Find(t => t.Id == id);
+        }
+
+        public EnergyType GetEnergyType(string id)
+        {
+            return energyTypes.Find(e => e.Id == id);
+        }
+
+        public ClassType GetClassType(string id)
+        {
+            return classTypes.Find(c => c.Id == id);
+        }
+
+        public WeaponType GetWeaponType(string id)
+        {
+            return weaponTypes.Find(w => w.Id == id);
+        }
     }
 }

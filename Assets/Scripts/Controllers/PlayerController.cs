@@ -33,12 +33,11 @@ namespace Controllers
         private Vector3 currentMovementVector;
         private float targetZoom;
 
-        private static Matrix4x4 IsoMatrix => Matrix4x4.Rotate(Quaternion.Euler(0, 45, 0));
+        private readonly Matrix4x4 isoMatrix = Matrix4x4.Rotate(Quaternion.Euler(0, 45, 0));
 
         private void Start()
         {
             rigidBody = GetComponent<Rigidbody>();
-            rigidBody.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
             realCamera = Camera.main;
             targetZoom = mainCamera.Lens.OrthographicSize;
         }
@@ -48,12 +47,12 @@ namespace Controllers
             var inputVector = context.ReadValue<Vector2>();
             var rawInput = new Vector3(inputVector.x, 0, inputVector.y);
 
-            targetMovementVector = IsoMatrix.MultiplyPoint3x4(rawInput);
+            targetMovementVector = isoMatrix.MultiplyPoint3x4(rawInput);
         }
 
         public void OnPlaceTower(InputAction.CallbackContext context)
         {
-            placementController?.OnPlaceTower(context);
+            placementController.OnPlaceTower(context);
         }
 
         private void FixedUpdate()

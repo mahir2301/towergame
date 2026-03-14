@@ -15,7 +15,7 @@ namespace Data
         private GameObject prefab;
         [SerializeField]
         private Vector2Int size;
-
+        [SerializeField]
         private TowerStats stats;
 
         public string Id => id;
@@ -23,11 +23,13 @@ namespace Data
         public ClassType ClassType => classType;
         public GameObject Prefab => prefab;
         public Vector2Int Size => size;
+        public TowerStats Stats => stats;
     }
 
+    [System.Serializable]
     public struct TowerStats
     {
-        public float health;
+        public float maxHealth;
         public float damage;
         public float range;
         public float fireRate;

@@ -7,7 +7,6 @@ namespace Controllers
 {
     public class TowerPlacementController : MonoBehaviour
     {
-        [Header("References")]
         [SerializeField]
         private GridManager gridManager;
         [SerializeField]
@@ -16,17 +15,10 @@ namespace Controllers
         private TowerType currentTowerConfig;
 
         private GameObject ghostInstance;
-        private bool isValidPlacement;
-        private Vector2Int currentGridPos;
-        private bool isMouseOverGrid;
+        private Vector2Int? currentGridPos;
 
         private void Start()
         {
-            if (mainCamera == null)
-            {
-                mainCamera = Camera.main;
-            }
-
             CreateGhost();
         }
 
@@ -68,75 +60,54 @@ namespace Controllers
 
         private void UpdateGhostState()
         {
-            var gridPos = GetMouseGridPosition(out var isOverGround);
-
-            if (!isOverGround)
-            {
-                if (!ghostInstance || !ghostInstance.activeSelf)
-                {
-                    return;
-                }
-
-                ghostInstance.SetActive(false);
-                isMouseOverGrid = false;
-
-                return;
-            }
-
-            isMouseOverGrid = true;
-
-            if (gridPos == currentGridPos && ghostInstance.activeSelf)
-            {
-                return;
-            }
-
+            var gridPos = GetMouseGridPosition();
             currentGridPos = gridPos;
 
-            var towerSize = currentTowerConfig?.Size ?? Vector2Int.one;
-            isValidPlacement = gridManager.IsCellAvailable(currentGridPos, towerSize);
+            if (gridPos is null)
+            {
+                ghostInstance.SetActive(false);
 
-            ghostInstance.SetActive(isValidPlacement);
+                return;
+            }
+
+            var towerSize = currentTowerConfig?.Size ?? Vector2Int.one;
+            var isValidPlacement = gridManager.IsCellAvailable(currentGridPos.Value, towerSize);
 
             if (!isValidPlacement)
             {
+                ghostInstance.SetActive(false);
+
                 return;
             }
 
-            var worldPos = gridManager.GridToWorld(currentGridPos, towerSize);
+            var worldPos = gridManager.GridToWorld(currentGridPos.Value, towerSize);
+            ghostInstance.SetActive(true);
             ghostInstance.transform.position = worldPos;
         }
 
-        private Vector2Int GetMouseGridPosition(out bool isOverGround)
+        private Vector2Int? GetMouseGridPosition()
         {
-            isOverGround = false;
             var mousePos = Mouse.current.position.ReadValue();
             var ray = mainCamera.ScreenPointToRay(new Vector3(mousePos.x, mousePos.y, 0));
-
             var groundPlane = new Plane(Vector3.up, 0);
 
             if (!groundPlane.Raycast(ray, out var distance))
             {
-                return Vector2Int.zero;
+                return null;
             }
 
             var worldPos = ray.GetPoint(distance);
-            isOverGround = true;
             return gridManager.WorldToGrid(worldPos);
         }
 
         public void OnPlaceTower(InputAction.CallbackContext context)
         {
-            if (!context.performed)
+            if (!context.performed || currentGridPos is null || !currentTowerConfig)
             {
                 return;
             }
 
-            if (!isMouseOverGrid || !isValidPlacement || currentTowerConfig == null)
-            {
-                return;
-            }
-
-            if (gridManager.TryPlaceTower(currentGridPos, currentTowerConfig, out var instance))
+            if (gridManager.TryPlaceTowerRuntime(currentGridPos.Value, currentTowerConfig, out var towerRuntime))
             {
                 Debug.Log($"Placed tower at {currentGridPos}");
             }

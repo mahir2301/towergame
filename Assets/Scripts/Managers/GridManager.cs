@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
 using Data;
+using Runtime;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Managers
 {
     public class GridManager : MonoBehaviour
     {
-        [Header("Grid Settings")]
         [SerializeField]
         private Vector2Int gridSize = new(32, 32);
 
@@ -59,68 +60,95 @@ namespace Managers
             return true;
         }
 
-        public bool TryPlaceTower(Vector2Int gridPos, TowerType config, out GameObject instance)
+        public bool TryPlaceElement<T>(Vector2Int gridPos, T prefab, out T instance) where T : MonoBehaviour, IPlaceable
         {
             instance = null;
 
-            if (config == null || config.Prefab == null)
+            if (prefab == null)
             {
-                Debug.LogError("TowerConfig or prefab is null!");
+                Debug.LogError($"Prefab is null for type {typeof(T).Name}!");
                 return false;
             }
 
-            if (!IsCellAvailable(gridPos, config.Size))
+            Vector2Int size = prefab.Size;
+
+            if (!IsCellAvailable(gridPos, size))
             {
                 return false;
             }
 
-            var worldPos = GridToWorld(gridPos, config.Size);
-            instance = Instantiate(config.Prefab, worldPos, Quaternion.identity);
+            var worldPos = GridToWorld(gridPos, size);
+            var spawnedInstance = Instantiate(prefab, worldPos, Quaternion.identity);
+            spawnedInstance.Initialize(gridPos);
 
-            for (var x = 0; x < config.Size.x; x++)
+            var networkObject = spawnedInstance.GetComponent<NetworkObject>();
+            if (networkObject != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
-                for (var y = 0; y < config.Size.y; y++)
+                networkObject.Spawn();
+            }
+
+            for (var x = 0; x < size.x; x++)
+            {
+                for (var y = 0; y < size.y; y++)
                 {
-                    occupiedCells[new Vector2Int(gridPos.x + x, gridPos.y + y)] = instance;
+                    occupiedCells[new Vector2Int(gridPos.x + x, gridPos.y + y)] = spawnedInstance.gameObject;
                 }
             }
 
+            instance = spawnedInstance;
             return true;
         }
 
-        public bool IsCellOccupied(Vector2Int gridPos)
-        {
-            return occupiedCells.ContainsKey(gridPos);
-        }
-
-        private static readonly Vector2Int Default = new(1, 1);
-
-        public bool TryPlaceEnergyNode(Vector2Int gridPos, EnergyType config, out GameObject instance)
+        public bool TryPlaceEnergyRuntime(Vector2Int gridPos, EnergyType config, int maxCapacity,
+            out EnergyRuntime instance)
         {
             instance = null;
 
-            if (config == null || config.Prefab == null)
+            if (config?.Prefab == null)
             {
-                Debug.LogError("TowerConfig or prefab is null!");
+                Debug.LogError("EnergyType or prefab is null!");
                 return false;
             }
 
-            if (!IsCellAvailable(gridPos, Default))
+            var energyPrefab = config.Prefab.GetComponent<EnergyRuntime>();
+            if (energyPrefab == null)
+            {
+                Debug.LogError("Energy prefab does not have EnergyRuntime component!");
+                return false;
+            }
+
+            if (!TryPlaceElement(gridPos, energyPrefab, out instance))
             {
                 return false;
             }
 
-            var worldPos = GridToWorld(gridPos, Default);
-            instance = Instantiate(config.Prefab, worldPos, Quaternion.identity);
+            instance.Initialize(config, maxCapacity, gridPos);
+            return true;
+        }
 
-            for (var x = 0; x < Default.x; x++)
+        public bool TryPlaceTowerRuntime(Vector2Int gridPos, TowerType config, out TowerRuntime instance)
+        {
+            instance = null;
+
+            if (config?.Prefab == null)
             {
-                for (var y = 0; y < Default.y; y++)
-                {
-                    occupiedCells[new Vector2Int(gridPos.x + x, gridPos.y + y)] = instance;
-                }
+                Debug.LogError("TowerType or prefab is null!");
+                return false;
             }
 
+            var towerPrefab = config.Prefab.GetComponent<TowerRuntime>();
+            if (towerPrefab == null)
+            {
+                Debug.LogError("Tower prefab does not have TowerRuntime component!");
+                return false;
+            }
+
+            if (!TryPlaceElement(gridPos, towerPrefab, out instance))
+            {
+                return false;
+            }
+
+            instance.Initialize(config.Id, gridPos, config.Size);
             return true;
         }
     }

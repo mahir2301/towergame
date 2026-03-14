@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Data.EnergyType
   id: crystal
   displayName: Crystal
-  prefab: {fileID: 0}
+  prefab: {fileID: 3263715069909696678, guid: d017b555b5a4aa44d843aee5e17b3904, type: 3}
