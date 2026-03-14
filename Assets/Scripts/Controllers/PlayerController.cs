@@ -27,6 +27,9 @@ namespace Controllers
         [SerializeField]
         private TowerPlacementController placementController;
 
+        [SerializeField]
+        Animator animator;
+
         private Rigidbody rigidBody;
         private Camera realCamera;
         private Vector3 targetMovementVector;
@@ -73,6 +76,7 @@ namespace Controllers
 
             var targetPosition = rigidBody.position + movementSpeed * Time.fixedDeltaTime * currentMovementVector;
             rigidBody.MovePosition(targetPosition);
+            animator.SetFloat("Speed", currentMovementVector.magnitude);
         }
 
         private void HandleRotation()

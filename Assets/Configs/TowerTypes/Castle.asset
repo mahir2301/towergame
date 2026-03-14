@@ -15,5 +15,10 @@ MonoBehaviour:
   id: castle
   displayName: Castle
   classType: {fileID: 11400000, guid: 6d521e4068922644a98d342009925aa0, type: 2}
-  prefab: {fileID: 0}
+  prefab: {fileID: 4255648128011636492, guid: dcb41f593bd4421498f76a0289131be7, type: 3}
   size: {x: 2, y: 2}
+  stats:
+    maxHealth: 0
+    damage: 0
+    range: 0
+    fireRate: 0
