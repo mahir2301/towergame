@@ -579,7 +579,6 @@ MonoBehaviour:
   minDistanceBetweenNodes: 5
   energyNodeConfig:
   - {fileID: 11400000, guid: 6b73cc5910000fa498835b9c3e3f1d85, type: 2}
-  - {fileID: 11400000, guid: 0283166f048741346acdd0952cfa2a10, type: 2}
   gridManager: {fileID: 1414855568}
 --- !u!1 &1414855566
 GameObject:

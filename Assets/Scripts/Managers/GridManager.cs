@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
-using Components;
 using Data;
 using UnityEngine;
-using static UnityEngine.Rendering.STP;
 
 namespace Managers
 {
@@ -38,7 +36,6 @@ namespace Managers
             return new Vector3(centerX, 0.5f, centerZ);
         }
 
-
         public bool IsValidPosition(Vector2Int gridPos)
         {
             return gridPos.x >= 0 && gridPos.x < gridSize.x
@@ -62,27 +59,27 @@ namespace Managers
             return true;
         }
 
-        public bool TryPlaceTower(Vector2Int gridPos, TowerConfig config, out GameObject instance)
+        public bool TryPlaceTower(Vector2Int gridPos, TowerType config, out GameObject instance)
         {
             instance = null;
 
-            if (config == null || config.towerPrefab == null)
+            if (config == null || config.Prefab == null)
             {
                 Debug.LogError("TowerConfig or prefab is null!");
                 return false;
             }
 
-            if (!IsCellAvailable(gridPos, config.gridSize))
+            if (!IsCellAvailable(gridPos, config.Size))
             {
                 return false;
             }
 
-            var worldPos = GridToWorld(gridPos, config.gridSize);
-            instance = Instantiate(config.towerPrefab, worldPos, Quaternion.identity);
+            var worldPos = GridToWorld(gridPos, config.Size);
+            instance = Instantiate(config.Prefab, worldPos, Quaternion.identity);
 
-            for (var x = 0; x < config.gridSize.x; x++)
+            for (var x = 0; x < config.Size.x; x++)
             {
-                for (var y = 0; y < config.gridSize.y; y++)
+                for (var y = 0; y < config.Size.y; y++)
                 {
                     occupiedCells[new Vector2Int(gridPos.x + x, gridPos.y + y)] = instance;
                 }
@@ -96,35 +93,35 @@ namespace Managers
             return occupiedCells.ContainsKey(gridPos);
         }
 
-        public bool TryPlaceEnergyNode(Vector2Int gridPos, EnergyNodeConfig config, out GameObject instance)
+        private static readonly Vector2Int Default = new(1, 1);
+
+        public bool TryPlaceEnergyNode(Vector2Int gridPos, EnergyType config, out GameObject instance)
         {
             instance = null;
 
-            if (config == null || config.energyNodePrefab == null)
+            if (config == null || config.Prefab == null)
             {
                 Debug.LogError("TowerConfig or prefab is null!");
                 return false;
             }
 
-            if (!IsCellAvailable(gridPos, config.gridSize))
+            if (!IsCellAvailable(gridPos, Default))
             {
                 return false;
             }
 
-            var worldPos = GridToWorld(gridPos, config.gridSize);
-            instance = Instantiate(config.energyNodePrefab, worldPos, Quaternion.identity);
+            var worldPos = GridToWorld(gridPos, Default);
+            instance = Instantiate(config.Prefab, worldPos, Quaternion.identity);
 
-            for (var x = 0; x < config.gridSize.x; x++)
+            for (var x = 0; x < Default.x; x++)
             {
-                for (var y = 0; y < config.gridSize.y; y++)
+                for (var y = 0; y < Default.y; y++)
                 {
                     occupiedCells[new Vector2Int(gridPos.x + x, gridPos.y + y)] = instance;
                 }
             }
 
             return true;
-
-
         }
     }
 }

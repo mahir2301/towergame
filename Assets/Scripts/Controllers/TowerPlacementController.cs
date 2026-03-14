@@ -13,7 +13,7 @@ namespace Controllers
         [SerializeField]
         private Camera mainCamera;
         [SerializeField]
-        private TowerConfig currentTowerConfig;
+        private TowerType currentTowerConfig;
 
         private GameObject ghostInstance;
         private bool isValidPlacement;
@@ -37,12 +37,12 @@ namespace Controllers
 
         private void CreateGhost()
         {
-            if (currentTowerConfig?.towerPrefab == null)
+            if (currentTowerConfig?.Prefab == null)
             {
                 return;
             }
 
-            ghostInstance = Instantiate(currentTowerConfig.towerPrefab, Vector3.zero, Quaternion.identity);
+            ghostInstance = Instantiate(currentTowerConfig.Prefab, Vector3.zero, Quaternion.identity);
             ghostInstance.name = "TowerGhost";
 
             foreach (var mb in ghostInstance.GetComponentsInChildren<MonoBehaviour>())
@@ -92,7 +92,7 @@ namespace Controllers
 
             currentGridPos = gridPos;
 
-            var towerSize = currentTowerConfig?.gridSize ?? Vector2Int.one;
+            var towerSize = currentTowerConfig?.Size ?? Vector2Int.one;
             isValidPlacement = gridManager.IsCellAvailable(currentGridPos, towerSize);
 
             ghostInstance.SetActive(isValidPlacement);
@@ -142,7 +142,7 @@ namespace Controllers
             }
         }
 
-        public void SetTowerConfig(TowerConfig config)
+        public void SetTowerConfig(TowerType config)
         {
             currentTowerConfig = config;
 

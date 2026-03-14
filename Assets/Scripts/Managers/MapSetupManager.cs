@@ -12,7 +12,7 @@ namespace Managers
 
         [Header("Energy Node prefabs")]
         [SerializeField]
-        private EnergyNodeConfig[] energyNodeConfig;
+        private EnergyType[] energyNodeConfig;
 
         [Header("References")]
         [SerializeField] private GridManager gridManager;
@@ -26,6 +26,8 @@ namespace Managers
 
             SpawnEnergyNodes();
         }
+
+        private static readonly Vector2Int Default = new(1, 1);
 
         private void SpawnEnergyNodes()
         {
@@ -43,8 +45,8 @@ namespace Managers
                 {
                     attempts++;
 
-                    var x = Random.Range(2, gridSize.x - node.gridSize.x);
-                    var y = Random.Range(2, gridSize.y - node.gridSize.y);
+                    var x = Random.Range(2, gridSize.x - Default.x);
+                    var y = Random.Range(2, gridSize.y - Default.y);
                     var newPos = new Vector2Int(x, y);
 
                     if(IsValidPosition(newPos, placedNodesPos)) {
