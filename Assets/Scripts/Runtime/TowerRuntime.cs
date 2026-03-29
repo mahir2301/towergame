@@ -36,7 +36,7 @@ namespace Runtime
             gridPosition = gridPos;
         }
 
-        public void Initialize(string towerConfigId, Vector2Int gridPos, Vector2Int towerSize)
+        public void Initialize(string towerConfigId, Vector2Int gridPos, Vector2Int towerSize, Vector3 worldPosition)
         {
             configId = towerConfigId;
             gridPosition = gridPos;
@@ -47,6 +47,8 @@ namespace Runtime
             {
                 currentHealth.Value = cachedConfig.Stats.maxHealth;
             }
+
+            transform.position = worldPosition;
         }
 
         public TowerType GetConfig()

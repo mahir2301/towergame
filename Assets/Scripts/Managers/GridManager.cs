@@ -20,21 +20,21 @@ namespace Managers
             return new Vector2Int(Mathf.FloorToInt(worldPos.x), Mathf.FloorToInt(worldPos.z));
         }
 
-        public Vector3 GridToWorld(Vector2Int gridPos)
+        public Vector3 GridToWorld(Vector2Int gridPos, float yOffset = 0.5f)
         {
-            return new Vector3(gridPos.x + 0.5f, 0.5f, gridPos.y + 0.5f);
+            return new Vector3(gridPos.x + 0.5f, yOffset, gridPos.y + 0.5f);
         }
 
-        public Vector3 GridToWorld(Vector2Int gridPos, Vector2Int size)
+        public Vector3 GridToWorld(Vector2Int gridPos, Vector2Int size, float yOffset = 0.5f)
         {
             if (size is { x: <= 1, y: <= 1 })
             {
-                return GridToWorld(gridPos);
+                return GridToWorld(gridPos, yOffset);
             }
 
             var centerX = gridPos.x + size.x * 0.5f;
             var centerZ = gridPos.y + size.y * 0.5f;
-            return new Vector3(centerX, 0.5f, centerZ);
+            return new Vector3(centerX, yOffset, centerZ);
         }
 
         public bool IsValidPosition(Vector2Int gridPos)
@@ -143,12 +143,14 @@ namespace Managers
                 return false;
             }
 
+            var worldPos = GridToWorld(gridPos, config.Size, 2.5f);
+
             if (!TryPlaceElement(gridPos, towerPrefab, out instance))
             {
                 return false;
             }
 
-            instance.Initialize(config.Id, gridPos, config.Size);
+            instance.Initialize(config.Id, gridPos, config.Size, worldPos);
             return true;
         }
     }

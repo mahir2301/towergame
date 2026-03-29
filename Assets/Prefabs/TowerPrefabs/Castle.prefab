@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3981727832369024567}
   - component: {fileID: -6806522466206905332}
   - component: {fileID: 2947613731384492776}
+  - component: {fileID: 3292250478985107094}
   m_Layer: 0
   m_Name: Castle
   m_TagString: Untagged
@@ -83,9 +84,9 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 14
   m_CollisionDetection: 0
 --- !u!114 &2947613731384492776
 MonoBehaviour:
@@ -102,7 +103,28 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   configId: 
   gridPosition: {x: 0, y: 0}
-  size: {x: 1, y: 1}
+  size: {x: 2, y: 2}
+--- !u!65 &3292250478985107094
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8547763559532241572}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2, y: 2.5, z: 1}
+  m_Center: {x: 0, y: -1.5, z: 0}
 --- !u!1001 &1283678979589649551
 PrefabInstance:
   m_ObjectHideFlags: 0

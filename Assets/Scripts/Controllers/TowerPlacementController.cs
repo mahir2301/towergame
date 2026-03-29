@@ -80,7 +80,7 @@ namespace Controllers
                 return;
             }
 
-            var worldPos = gridManager.GridToWorld(currentGridPos.Value, towerSize);
+            var worldPos = gridManager.GridToWorld(currentGridPos.Value, towerSize, 2.5f);
             ghostInstance.SetActive(true);
             ghostInstance.transform.position = worldPos;
         }
@@ -97,6 +97,7 @@ namespace Controllers
             }
 
             var worldPos = ray.GetPoint(distance);
+            Debug.Log(worldPos);
             return gridManager.WorldToGrid(worldPos);
         }
 
