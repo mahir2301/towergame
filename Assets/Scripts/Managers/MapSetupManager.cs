@@ -51,6 +51,7 @@ namespace Managers
                     var newPos = new Vector2Int(x, y);
 
                     if (!IsValidPosition(newPos, placedNodesPos) ||
+                        gridManager.IsWaterCell(newPos) ||
                         !gridManager.TryPlaceEnergyRuntime(newPos, node, defaultMaxCapacity, out var energyRuntime))
                     {
                         continue;

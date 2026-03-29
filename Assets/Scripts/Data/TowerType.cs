@@ -17,6 +17,8 @@ namespace Data
         private Vector2Int size;
         [SerializeField]
         private TowerStats stats;
+        [SerializeField]
+        private bool canBePlacedOnWater;
 
         public string Id => id;
         public string DisplayName => displayName;
@@ -24,6 +26,7 @@ namespace Data
         public GameObject Prefab => prefab;
         public Vector2Int Size => size;
         public TowerStats Stats => stats;
+        public bool CanBePlacedOnWater => canBePlacedOnWater;
     }
 
     [System.Serializable]

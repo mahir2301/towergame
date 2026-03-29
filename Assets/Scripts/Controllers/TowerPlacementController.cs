@@ -66,17 +66,16 @@ namespace Controllers
             if (gridPos is null)
             {
                 ghostInstance.SetActive(false);
-
                 return;
             }
 
             var towerSize = currentTowerConfig?.Size ?? Vector2Int.one;
-            var isValidPlacement = gridManager.IsCellAvailable(currentGridPos.Value, towerSize);
+            var canPlaceOnWater = currentTowerConfig?.CanBePlacedOnWater ?? false;
+            var isValidPlacement = gridManager.IsCellAvailable(currentGridPos.Value, towerSize, canPlaceOnWater);
 
             if (!isValidPlacement)
             {
                 ghostInstance.SetActive(false);
-
                 return;
             }
 
@@ -104,6 +103,12 @@ namespace Controllers
         public void OnPlaceTower(InputAction.CallbackContext context)
         {
             if (!context.performed || currentGridPos is null || !currentTowerConfig)
+            {
+                return;
+            }
+
+            var canPlaceOnWater = currentTowerConfig.CanBePlacedOnWater;
+            if (!gridManager.IsCellAvailable(currentGridPos.Value, currentTowerConfig.Size, canPlaceOnWater))
             {
                 return;
             }

@@ -12,8 +12,22 @@ namespace Managers
         private Vector2Int gridSize = new(32, 32);
 
         private readonly Dictionary<Vector2Int, GameObject> occupiedCells = new();
+        private readonly HashSet<Vector2Int> waterCells = new();
 
         public Vector2Int GridSize => gridSize;
+
+        public bool IsWaterCell(Vector2Int gridPos)
+        {
+            return waterCells.Contains(gridPos);
+        }
+
+        public void MarkCellsAsWater(List<Vector2Int> cells)
+        {
+            foreach (var cell in cells)
+            {
+                waterCells.Add(cell);
+            }
+        }
 
         public Vector2Int WorldToGrid(Vector3 worldPos)
         {
@@ -43,7 +57,7 @@ namespace Managers
                                   && gridPos.y >= 0 && gridPos.y < gridSize.y;
         }
 
-        public bool IsCellAvailable(Vector2Int gridPos, Vector2Int size)
+        public bool IsCellAvailable(Vector2Int gridPos, Vector2Int size, bool allowWater = false)
         {
             for (var x = 0; x < size.x; x++)
             {
@@ -51,6 +65,10 @@ namespace Managers
                 {
                     var checkPos = new Vector2Int(gridPos.x + x, gridPos.y + y);
                     if (!IsValidPosition(checkPos) || occupiedCells.ContainsKey(checkPos))
+                    {
+                        return false;
+                    }
+                    if (!allowWater && waterCells.Contains(checkPos))
                     {
                         return false;
                     }
