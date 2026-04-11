@@ -950,29 +950,29 @@ Player has Tech Rifle (Class: Tech)
 ## Implementation Checklist
 
 ### Phase 1: Core Types (ScriptableObjects)
-- [ ] Create `EnergyType.cs`
-- [ ] Create `Class.cs`
-- [ ] Create `TowerType.cs` (include buildCost, upgradeCost, repairCost)
-- [ ] Create `WeaponType.cs`
-- [ ] Create `GameRegistry.cs` (include startingGold, maxLoadoutSlots)
+- [x] Create `EnergyType.cs`
+- [x] Create `ClassType.cs` (named `ClassType` instead of `Class`)
+- [x] Create `TowerType.cs` — implemented with `TowerStats` struct (maxHealth, damage, range, fireRate), `gridSize`, `canBePlacedOnWater`; missing: `buildCost`, `upgradeCost`, `repairCost`, `energyCost`, `startsUnlocked`, `unlockCondition`
+- [x] Create `WeaponType.cs` — implemented with `WeaponStats` struct (damage, fireRate, range); missing: `energyCostPerShot`, `energySpikeDuration`, `startsUnlocked`, `unlockCondition`
+- [x] Create `GameRegistry.cs` — implemented with lookup methods; missing: `startingGold`, `maxTowersInLoadout`, `maxWeaponsInLoadout`
 - [ ] Create `UnlockConditionSO.cs`
-- [ ] Create Editor menu items (`CreateAssetMenu`)
-- [ ] Create test assets (Tech class, Basic tower, Rifle weapon)
+- [x] Create Editor menu items (`CreateAssetMenu`) — all SO types have `CreateAssetMenu`
+- [x] Create test assets — 5 class types (Tech, Medieval, Nature, Arcane, Neutral), 4 energy types (Crystal, Electricity, Stone, Wood), 5 tower types (Turret, Castle, Lightning, Raygun, TreeHouse), 1 weapon type (Fist)
 
 ### Phase 2: Energy System
-- [ ] Create `EnergyRuntime.cs` (NetworkBehaviour)
-- [ ] Implement capacity tracking
-- [ ] Implement connection management
+- [x] Create `EnergyRuntime.cs` (NetworkBehaviour) — with `NetworkVariable<int>` for capacity, `NetworkList<ulong>` for connected towers/players
+- [x] Implement capacity tracking — `currentCapacity`, `maxCapacity`, `TryConnectTower()`, `TryConnectPlayer()`, `DisconnectTower()`, `DisconnectPlayer()`
+- [x] Implement connection management — `CanConnectClass()` validates class compatibility, auto-registers with `EnergyNetworkManager`
 - [ ] Create `EnergyNetworkVisualization.cs` (power lines)
 
 ### Phase 3: Tower System
-- [ ] Create `TowerRuntime.cs` (NetworkBehaviour)
+- [x] Create `TowerRuntime.cs` (NetworkBehaviour) — with `NetworkVariable<float>` for health, `NetworkVariable<bool>` for powered state
 - [ ] Create `TowerBehavior.cs` (base class)
 - [ ] Create `BasicTurretBehavior.cs` (simple behavior)
-- [ ] Update `TowerType` to reference prefab with TowerRuntime
+- [x] Update `TowerType` to reference prefab with TowerRuntime — `prefab` field exists on `TowerType`
 - [ ] Create `TowerSpawnSystem.cs` (server-authoritative spawning)
 - [ ] Implement upgrade system
-- [ ] Implement repair system
+- [x] Implement repair system (partial) — `RepairServerRpc` and `TakeDamageServerRpc` stubs exist in `TowerRuntime`, but no game loop or UI calls them
 
 ### Phase 4: Weapon System
 - [ ] Create `WeaponInstance.cs` (serializable data)
@@ -983,7 +983,7 @@ Player has Tech Rifle (Class: Tech)
 ### Phase 5: Player System
 - [ ] Create `PlayerRuntime.cs` (NetworkBehaviour)
 - [ ] Create `PlayerWeaponController.cs` (input handling)
-- [ ] Update `PlayerController.cs` to reference PlayerRuntime
+- [x] Update `PlayerController.cs` to reference PlayerRuntime (partial) — `PlayerController` handles movement/rotation/zoom but does not yet reference `PlayerRuntime` (class doesn't exist)
 - [ ] Implement `ConnectToEnergyRuntimeServerRpc`
 - [ ] Implement loadout selection (`SelectLoadoutServerRpc`)
 
@@ -1000,12 +1000,75 @@ Player has Tech Rifle (Class: Tech)
 - [ ] Test persistence across game restarts
 
 ### Phase 8: Multiplayer Integration
-- [ ] Add `NetworkManager` setup
+- [ ] Add `NetworkManager` setup — partial: default network prefabs registered, but no custom NetworkManager config
 - [ ] Create `PlayerSpawnManager.cs`
 - [ ] Test weapon firing across network
 - [ ] Test tower placement across network
 - [ ] Test gold synchronization
 - [ ] Test energy spike synchronization
+
+### Additional Implemented Features (beyond original checklist)
+
+#### Grid System
+- [x] `GridManager.cs` — 32x32 grid with world-to-grid / grid-to-world coordinate conversion
+- [x] Multi-cell centering for larger than 1x1 objects
+- [x] Cell occupation tracking (`Dictionary<Vector2Int, GameObject>`)
+- [x] Water cell tracking (`HashSet<Vector2Int>`) with water placement restriction
+- [x] Generic placement system with `IPlaceable` interface — `TryPlaceElement<T>(gridPos, prefab, out instance)`
+- [x] Valid placement checking — bounds, occupation, and water checks combined for multi-cell objects
+
+#### Player Controller
+- [x] `PlayerController.cs` — WASD/arrow key movement with isometric projection matrix rotation
+- [x] Mouse-based rotation (character faces cursor via ground plane raycast)
+- [x] Camera zoom via scroll wheel (Cinemachine orthographic size, smooth interpolation)
+- [x] Animator integration — walk animation speed tied to movement magnitude
+- [x] Unity Input System setup — `PlayerInputActions.inputactions` with Move (Vector2) and PlaceTower (Button)
+
+#### Tower Placement
+- [x] `TowerPlacementController.cs` — ghost preview following mouse in grid-snapped positions
+- [x] Ghost preparation — disables MonoBehaviours, Colliders, sets Rigidbodies to kinematic
+- [x] Placement validation — checks grid availability and water restrictions
+- [x] Tower config switching — `SetTowerConfig()` destroys and recreates ghost on tower change
+- [x] Actual placement — `TryPlaceTowerRuntime()` instantiates prefab, initializes with config, places on grid
+
+#### Energy Network Manager
+- [x] `EnergyNetworkManager.cs` — singleton NetworkBehaviour tracking all EnergyRuntime instances
+- [x] Nearest-compatible-node lookup — `GetNearestCompatibleEnergy(position, classType, energyCost)`
+- [x] Tower-to-energy connection — `TryConnectTowerToEnergy()` finds compatible node, connects tower, sets powered state
+
+#### Map Generation
+- [x] `MapSetupManager.cs` — spawns configurable number of energy nodes per type with minimum distance, avoiding water/occupied cells
+- [x] `LakeGenerator.cs` — procedural lake generation (3 lakes across 4 quadrants, size 5-10 cells, min 3 cells from edges), creates water cell tracking and visual water planes
+
+#### Player Character
+- [x] "The Dude" player character model — fully rigged 3D model from separate .obj parts (head, torso, arms, legs)
+- [x] Idle and Walk animations with animator controller
+- [x] Player prefab with all components attached
+
+#### Tower & Energy Prefabs
+- [x] Turret tower prefab
+- [x] Castle tower prefab (2x2)
+- [x] Crystal energy node prefab
+- [x] Water tower 3D model (obj + materials)
+- [x] Castle 3D model (obj + materials)
+
+#### Visual Assets
+- [x] Ground material
+- [x] Water material
+- [x] Tree prefab with textures (diffuse, normal+specular, shadow, translucency+gloss)
+- [x] Unity Terrain asset
+
+#### Network Infrastructure
+- [x] Default network prefabs asset configured
+- [x] Server-authoritative state via NetworkVariable / NetworkList on TowerRuntime and EnergyRuntime
+- [x] ServerRpc patterns for damage/repair on towers
+
+#### Data Layer
+- [x] `IPlaceable` interface for grid-placed entities
+- [x] `TowerStats` struct (maxHealth, damage, range, fireRate)
+- [x] `WeaponStats` struct (damage, fireRate, range)
+- [x] Class-energy compatibility checking (`ClassType.CanConnectTo()`)
+- [x] GameRegistry lazy-loaded singleton pattern via `Resources/`
 
 ---
 
