@@ -474,6 +474,7 @@ MonoBehaviour:
   defaultMaxCapacity: 100
   energyNodeConfig:
   - {fileID: 11400000, guid: cbb71f6aa217ca747a6cbf183665092b, type: 2}
+  - {fileID: 11400000, guid: b52d8142ae17cf44fa8dcfdb0967e115, type: 2}
   gridManager: {fileID: 500300003}
 --- !u!114 &500300003
 MonoBehaviour:
