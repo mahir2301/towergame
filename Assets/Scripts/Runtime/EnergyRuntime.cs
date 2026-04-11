@@ -25,6 +25,7 @@ namespace Runtime
             set => gridPosition = value;
         }
         public Vector2Int Size => new(1, 1);
+        public bool CanBePlacedOnWater => false;
         public int MaxCapacity => maxCapacity;
         public int CurrentCapacity => currentCapacity.Value;
         public int EnergyRange => config != null ? config.EnergyRange : 0;

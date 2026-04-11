@@ -28,6 +28,13 @@ namespace Managers
         {
             if (!IsServer)
             {
+                Debug.LogWarning("[TowerSpawn] Not server");
+                return;
+            }
+
+            if (gridManager == null)
+            {
+                Debug.LogError("[TowerSpawn] GridManager reference is null! Assign it in the Inspector.");
                 return;
             }
 
@@ -39,15 +46,17 @@ namespace Managers
             }
 
             var canPlaceOnWater = config.CanBePlacedOnWater;
+            Debug.Log($"[TowerSpawn] Received request for {towerConfigId} at {gridPos} (water={canPlaceOnWater})");
+
             if (!gridManager.IsCellAvailable(gridPos, config.Size, canPlaceOnWater))
             {
-                Debug.LogWarning($"[TowerSpawn] Cell not available at {gridPos}");
+                Debug.LogWarning($"[TowerSpawn] Cell not available at {gridPos} (size={config.Size}, water={canPlaceOnWater})");
                 return;
             }
 
             if (!gridManager.TryPlaceTowerRuntime(gridPos, config, out var tower))
             {
-                Debug.LogWarning($"[TowerSpawn] Failed to place {towerConfigId} at {gridPos}");
+                Debug.LogWarning($"[TowerSpawn] TryPlaceTowerRuntime failed for {towerConfigId} at {gridPos}");
                 return;
             }
 

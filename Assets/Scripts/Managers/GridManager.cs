@@ -101,7 +101,7 @@ namespace Managers
 
             Vector2Int size = prefab.Size;
 
-            if (!IsCellAvailable(gridPos, size))
+            if (!IsCellAvailable(gridPos, size, prefab.CanBePlacedOnWater))
             {
                 return false;
             }
@@ -172,7 +172,8 @@ namespace Managers
                 return false;
             }
 
-            var worldPos = GridToWorld(gridPos, config.Size, 2.5f);
+            var basePos = GridToWorld(gridPos, config.Size, 0f);
+            var worldPos = basePos + towerPrefab.PlacementOffset;
 
             if (!TryPlaceElement(gridPos, towerPrefab, out instance))
             {

@@ -11,6 +11,8 @@ namespace Runtime
         [Header("Configuration")]
         [SerializeField]
         private string configId;
+        [SerializeField]
+        private Vector3 placementOffset;
 
         [Header("State")]
         [SerializeField]
@@ -36,6 +38,8 @@ namespace Runtime
             set => gridPosition = value;
         }
         public Vector2Int Size => size;
+        public Vector3 PlacementOffset => placementOffset;
+        public bool CanBePlacedOnWater => cachedConfig?.CanBePlacedOnWater ?? false;
         public float CurrentHealth => currentHealth.Value;
         public bool IsPowered => isPowered.Value;
 

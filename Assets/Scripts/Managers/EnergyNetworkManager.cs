@@ -251,7 +251,7 @@ namespace Managers
             var lineGo = new GameObject($"PowerLine_{towerId}");
             lineGo.transform.SetParent(transform);
             var powerLine = lineGo.AddComponent<PowerLineVisual>();
-            powerLine.Setup(sourceTransform.position, tower.transform.position, 0.5f, 2.5f);
+            powerLine.Setup(sourceTransform.position, tower.transform.position);
             powerLines[towerId] = powerLine;
             Debug.Log($"[EnergyNetwork] Created power line from {sourceTransform.position} to {tower.transform.position}");
         }

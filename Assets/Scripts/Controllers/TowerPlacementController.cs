@@ -26,6 +26,7 @@ namespace Controllers
         private MaterialPropertyBlock ghostPropertyBlock;
         private Vector2Int? currentGridPos;
         private bool isInRange;
+        private Vector3 cachedGhostOffset;
 
         private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
 
@@ -46,6 +47,9 @@ namespace Controllers
             {
                 return;
             }
+
+            var prefabRuntime = currentTowerConfig.Prefab.GetComponent<TowerRuntime>();
+            cachedGhostOffset = prefabRuntime?.PlacementOffset ?? Vector3.zero;
 
             ghostInstance = Instantiate(currentTowerConfig.Prefab, Vector3.zero, Quaternion.identity);
             ghostInstance.name = "TowerGhost";
@@ -94,7 +98,8 @@ namespace Controllers
                 return;
             }
 
-            var worldPos = gridManager.GridToWorld(currentGridPos.Value, towerSize, 2.5f);
+            var basePos = gridManager.GridToWorld(currentGridPos.Value, towerSize, 0f);
+            var worldPos = basePos + cachedGhostOffset;
             ghostInstance.SetActive(true);
             ghostInstance.transform.position = worldPos;
 
