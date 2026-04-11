@@ -1,5 +1,6 @@
-﻿using Data;
+using Data;
 using Managers;
+using Runtime;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -10,15 +11,27 @@ namespace Controllers
         [SerializeField]
         private GridManager gridManager;
         [SerializeField]
+        private TowerSpawnSystem towerSpawnSystem;
+        [SerializeField]
         private Camera mainCamera;
         [SerializeField]
         private TowerType currentTowerConfig;
+        [SerializeField]
+        private Color canConnectColor = new(0.2f, 0.8f, 0.2f, 0.6f);
+        [SerializeField]
+        private Color cannotConnectColor = new(0.8f, 0.2f, 0.2f, 0.6f);
 
         private GameObject ghostInstance;
+        private Renderer[] ghostRenderers;
+        private MaterialPropertyBlock ghostPropertyBlock;
         private Vector2Int? currentGridPos;
+        private bool isInRange;
+
+        private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
 
         private void Start()
         {
+            ghostPropertyBlock = new MaterialPropertyBlock();
             CreateGhost();
         }
 
@@ -55,6 +68,8 @@ namespace Controllers
                 rb.isKinematic = true;
             }
 
+            ghostRenderers = ghostInstance.GetComponentsInChildren<Renderer>();
+
             ghostInstance.SetActive(false);
         }
 
@@ -82,6 +97,61 @@ namespace Controllers
             var worldPos = gridManager.GridToWorld(currentGridPos.Value, towerSize, 2.5f);
             ghostInstance.SetActive(true);
             ghostInstance.transform.position = worldPos;
+
+            UpdateGhostEnergyIndicator();
+        }
+
+        private void UpdateGhostEnergyIndicator()
+        {
+            if (currentTowerConfig == null || currentGridPos == null)
+            {
+                return;
+            }
+
+            var classType = currentTowerConfig.ClassType;
+            var gridPos = currentGridPos.Value;
+
+            isInRange = IsGridPositionPowered(gridPos, classType);
+            var tintColor = isInRange ? canConnectColor : cannotConnectColor;
+
+            ghostPropertyBlock.SetColor(BaseColorProperty, tintColor);
+
+            foreach (var renderer in ghostRenderers)
+            {
+                renderer.SetPropertyBlock(ghostPropertyBlock);
+            }
+        }
+
+        private bool IsGridPositionPowered(Vector2Int gridPos, ClassType classType)
+        {
+            foreach (var energy in FindObjectsByType<EnergyRuntime>(FindObjectsSortMode.None))
+            {
+                if (classType != null && !classType.CanConnectTo(energy.Config))
+                {
+                    continue;
+                }
+
+                if (Vector2Int.Distance(gridPos, energy.GridPosition) <= energy.EnergyRange)
+                {
+                    return true;
+                }
+            }
+
+            foreach (var tower in FindObjectsByType<TowerRuntime>(FindObjectsSortMode.None))
+            {
+                var config = tower.GetConfig();
+                if (config == null || config.AntennaRange <= 0 || !tower.IsPowered)
+                {
+                    continue;
+                }
+
+                if (Vector2Int.Distance(gridPos, tower.GridPosition) <= config.AntennaRange)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private Vector2Int? GetMouseGridPosition()
@@ -96,7 +166,6 @@ namespace Controllers
             }
 
             var worldPos = ray.GetPoint(distance);
-            Debug.Log(worldPos);
             return gridManager.WorldToGrid(worldPos);
         }
 
@@ -113,10 +182,14 @@ namespace Controllers
                 return;
             }
 
-            if (gridManager.TryPlaceTowerRuntime(currentGridPos.Value, currentTowerConfig, out var towerRuntime))
+            if (towerSpawnSystem == null)
             {
-                Debug.Log($"Placed tower at {currentGridPos}");
+                Debug.LogError("[Placement] TowerSpawnSystem reference is null! Assign it in the Inspector.");
+                return;
             }
+
+            Debug.Log($"[Placement] Requesting {currentTowerConfig.Id} at {currentGridPos.Value}");
+            towerSpawnSystem.RequestPlaceTowerServerRpc(currentTowerConfig.Id, currentGridPos.Value);
         }
 
         public void SetTowerConfig(TowerType config)

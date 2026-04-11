@@ -119,6 +119,50 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &172765786
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 172765788}
+  - component: {fileID: 172765787}
+  m_Layer: 0
+  m_Name: NetworkStarter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &172765787
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 172765786}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0e6c09eed4dca54ea90aa72088fe9bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkStarter
+--- !u!4 &172765788
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 172765786}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 112.83498, y: 0, z: 144.61122}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &267404661
 GameObject:
   m_ObjectHideFlags: 0
@@ -367,6 +411,7 @@ GameObject:
   - component: {fileID: 500300000}
   - component: {fileID: 500300001}
   - component: {fileID: 500300005}
+  - component: {fileID: 500300006}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -424,7 +469,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad72c078a1b2c594f86220360c285af8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Managers.MapSetupManager
-  nodeCount: 3
+  nodeCount: 10
   minDistanceBetweenNodes: 10
   defaultMaxCapacity: 100
   energyNodeConfig:
@@ -477,6 +522,20 @@ MonoBehaviour:
   waterMaterial: {fileID: 2100000, guid: 370476ce8b0471e45937cf2f751f67ba, type: 2}
   gridManager: {fileID: 500300003}
   groundObject: {fileID: 1160422660}
+--- !u!114 &500300006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 500299999}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c47da33d57e4ee4088f28d22865a6d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Managers.TowerSpawnSystem
+  ShowTopMostFoldoutHeaderGroup: 1
+  gridManager: {fileID: 500300003}
 --- !u!1 &526166268 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3452855052894926423, guid: 0bc62a4181badfc4e9168bfe74ea2dc0, type: 3}
@@ -500,8 +559,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Controllers.TowerPlacementController
   gridManager: {fileID: 500300003}
+  towerSpawnSystem: {fileID: 500300006}
   mainCamera: {fileID: 1745330854}
   currentTowerConfig: {fileID: 11400000, guid: 1847706b3890bb3499f0ca53a07a8a00, type: 2}
+  canConnectColor: {r: 0.2, g: 0.8, b: 0.2, a: 0.6}
+  cannotConnectColor: {r: 0.8, g: 0.2, b: 0.2, a: 0.6}
 --- !u!114 &526166272
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -822,6 +884,7 @@ GameObject:
   - component: {fileID: 1160422664}
   - component: {fileID: 1160422663}
   - component: {fileID: 1160422662}
+  - component: {fileID: 1160422665}
   m_Layer: 0
   m_Name: Ground
   m_TagString: Untagged
@@ -923,6 +986,21 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1160422660}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1160422665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1160422660}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bde33cc650e3d524fb9932fbc4cee514, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Visuals.GridVisuals
+  baseColor: {r: 0.18039216, g: 0.49019608, b: 0.19607843, a: 1}
+  gridColor: {r: 0.03, g: 0.13, b: 0.03, a: 0.6}
+  gridThickness: 0.03
 --- !u!1 &1745330850
 GameObject:
   m_ObjectHideFlags: 0
@@ -1220,3 +1298,4 @@ SceneRoots:
   - {fileID: 500300004}
   - {fileID: 631316536}
   - {fileID: 6233908524711824283}
+  - {fileID: 172765788}

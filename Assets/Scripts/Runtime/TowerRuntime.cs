@@ -1,6 +1,8 @@
 using Data;
+using Managers;
 using Unity.Netcode;
 using UnityEngine;
+using Visuals;
 
 namespace Runtime
 {
@@ -20,6 +22,12 @@ namespace Runtime
         private NetworkVariable<bool> isPowered = new();
 
         private TowerType cachedConfig;
+        private ulong connectedEnergyId = ulong.MaxValue;
+        private ulong connectedViaAntennaId = ulong.MaxValue;
+        private RangeIndicator rangeIndicator;
+
+        public ulong ConnectedEnergyId => connectedEnergyId;
+        public ulong ConnectedViaAntennaId => connectedViaAntennaId;
 
         public string ConfigId => configId;
         public Vector2Int GridPosition
@@ -30,6 +38,32 @@ namespace Runtime
         public Vector2Int Size => size;
         public float CurrentHealth => currentHealth.Value;
         public bool IsPowered => isPowered.Value;
+
+        private void Start()
+        {
+            CreateAntennaRangeIndicator();
+            isPowered.OnValueChanged += OnPoweredChanged;
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+
+            if (!IsServer)
+            {
+                var gridManagers = FindObjectsByType<Managers.GridManager>(FindObjectsSortMode.None);
+                foreach (var gm in gridManagers)
+                {
+                    gm.RegisterOccupiedCells(gridPosition, size, gameObject);
+                }
+            }
+        }
+
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+            isPowered.OnValueChanged -= OnPoweredChanged;
+        }
 
         public void Initialize(Vector2Int gridPos)
         {
@@ -46,6 +80,7 @@ namespace Runtime
             if (IsServer && cachedConfig != null)
             {
                 currentHealth.Value = cachedConfig.Stats.maxHealth;
+                EnergyNetworkManager.Instance?.TryConnectTowerToEnergy(this);
             }
 
             transform.position = worldPosition;
@@ -78,6 +113,48 @@ namespace Runtime
             if (IsServer)
             {
                 isPowered.Value = powered;
+            }
+        }
+
+        public void SetConnection(ulong energyId, ulong antennaId)
+        {
+            connectedEnergyId = energyId;
+            connectedViaAntennaId = antennaId;
+            SetPowered(energyId != ulong.MaxValue);
+        }
+
+        public void ClearConnection()
+        {
+            connectedEnergyId = ulong.MaxValue;
+            connectedViaAntennaId = ulong.MaxValue;
+            SetPowered(false);
+        }
+
+        private void CreateAntennaRangeIndicator()
+        {
+            var config = GetConfig();
+            if (config == null || config.AntennaRange <= 0)
+            {
+                return;
+            }
+
+            var indicatorGo = new GameObject("AntennaRangeIndicator");
+            indicatorGo.transform.SetParent(transform);
+            indicatorGo.transform.localPosition = Vector3.zero;
+
+            rangeIndicator = indicatorGo.AddComponent<RangeIndicator>();
+            rangeIndicator.ShowAntenna(config.AntennaRange);
+        }
+
+        private void OnPoweredChanged(bool wasPowered, bool isNowPowered)
+        {
+            if (rangeIndicator != null)
+            {
+                var config = GetConfig();
+                if (config != null && config.AntennaRange > 0)
+                {
+                    rangeIndicator.Show(config.AntennaRange, isNowPowered);
+                }
             }
         }
     }

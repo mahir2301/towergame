@@ -19,6 +19,8 @@ namespace Data
         private TowerStats stats;
         [SerializeField]
         private bool canBePlacedOnWater;
+        [SerializeField]
+        private int antennaRange;
 
         public string Id => id;
         public string DisplayName => displayName;
@@ -27,6 +29,8 @@ namespace Data
         public Vector2Int Size => size;
         public TowerStats Stats => stats;
         public bool CanBePlacedOnWater => canBePlacedOnWater;
+        public int AntennaRange => antennaRange;
+        public bool IsAntenna => antennaRange > 0;
     }
 
     [System.Serializable]
@@ -36,5 +40,6 @@ namespace Data
         public float damage;
         public float range;
         public float fireRate;
+        public int energyCost;
     }
 }

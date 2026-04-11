@@ -57,6 +57,17 @@ namespace Managers
                                   && gridPos.y >= 0 && gridPos.y < gridSize.y;
         }
 
+        public void RegisterOccupiedCells(Vector2Int gridPos, Vector2Int size, GameObject obj)
+        {
+            for (var x = 0; x < size.x; x++)
+            {
+                for (var y = 0; y < size.y; y++)
+                {
+                    occupiedCells[new Vector2Int(gridPos.x + x, gridPos.y + y)] = obj;
+                }
+            }
+        }
+
         public bool IsCellAvailable(Vector2Int gridPos, Vector2Int size, bool allowWater = false)
         {
             for (var x = 0; x < size.x; x++)

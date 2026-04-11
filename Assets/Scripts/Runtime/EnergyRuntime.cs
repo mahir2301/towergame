@@ -2,6 +2,7 @@ using Data;
 using Managers;
 using Unity.Netcode;
 using UnityEngine;
+using Visuals;
 
 namespace Runtime
 {
@@ -15,6 +16,7 @@ namespace Runtime
         private int maxCapacity;
 
         private readonly NetworkVariable<int> currentCapacity = new();
+        private RangeIndicator rangeIndicator;
 
         public EnergyType Config => config;
         public Vector2Int GridPosition
@@ -25,6 +27,7 @@ namespace Runtime
         public Vector2Int Size => new(1, 1);
         public int MaxCapacity => maxCapacity;
         public int CurrentCapacity => currentCapacity.Value;
+        public int EnergyRange => config != null ? config.EnergyRange : 0;
         public NetworkList<ulong> ConnectedTowerIds { get; private set; }
         public NetworkList<ulong> ConnectedPlayerIds { get; private set; }
 
@@ -32,6 +35,11 @@ namespace Runtime
         {
             ConnectedTowerIds = new NetworkList<ulong>();
             ConnectedPlayerIds = new NetworkList<ulong>();
+        }
+
+        private void Start()
+        {
+            CreateRangeIndicator();
         }
 
         public override void OnNetworkSpawn()
@@ -125,6 +133,21 @@ namespace Runtime
         public bool CanConnectClass(ClassType classType)
         {
             return classType != null && config != null && classType.CanConnectTo(config);
+        }
+
+        private void CreateRangeIndicator()
+        {
+            if (EnergyRange <= 0)
+            {
+                return;
+            }
+
+            var indicatorGo = new GameObject("EnergyRangeIndicator");
+            indicatorGo.transform.SetParent(transform);
+            indicatorGo.transform.localPosition = Vector3.zero;
+
+            rangeIndicator = indicatorGo.AddComponent<RangeIndicator>();
+            rangeIndicator.ShowEnergy(EnergyRange);
         }
     }
 }

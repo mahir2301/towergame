@@ -17,3 +17,11 @@ MonoBehaviour:
   classType: {fileID: 11400000, guid: 54de1a5c92312f840a6c90a4d37d3b8e, type: 2}
   prefab: {fileID: 0}
   size: {x: 1, y: 1}
+  stats:
+    maxHealth: 0
+    damage: 0
+    range: 0
+    fireRate: 0
+    energyCost: 10
+  canBePlacedOnWater: 0
+  antennaRange: 0
