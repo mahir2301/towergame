@@ -196,12 +196,11 @@ namespace Controllers
         {
             currentTowerConfig = config;
 
-            if (ghostInstance == null)
+            if (ghostInstance != null)
             {
-                return;
+                Destroy(ghostInstance);
             }
 
-            Destroy(ghostInstance);
             CreateGhost();
         }
     }

@@ -19,6 +19,8 @@ namespace Data
         [SerializeField]
         private List<WeaponType> weaponTypes = new();
 
+        public IReadOnlyList<TowerType> TowerTypes => towerTypes;
+
         [ContextMenu("Collect Assets")]
         private void CollectAssets()
         {

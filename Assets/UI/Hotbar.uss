@@ -1,0 +1,63 @@
+.hotbar {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: row;
+    justify-content: center;
+    padding: 8px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 8px;
+}
+
+.hotbar-slots {
+    flex-direction: row;
+    justify-content: center;
+}
+
+.slot {
+    width: 100px;
+    height: 120px;
+    margin: 4px;
+    background-color: rgba(30, 30, 30, 0.85);
+    border-width: 2px;
+    border-color: rgba(100, 100, 100, 0.6);
+    border-radius: 6px;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: column;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.slot:hover {
+    border-color: rgba(180, 180, 180, 0.8);
+}
+
+.slot.selected {
+    border-color: rgba(0.2, 0.8, 0.2, 1);
+    border-width: 3px;
+    background-color: rgba(20, 60, 20, 0.85);
+}
+
+.slot-preview {
+    width: 90px;
+    height: 80px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.slot-name {
+    font-size: 12px;
+    color: rgba(220, 220, 220, 1);
+    -unity-font-style: bold;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.slot-key {
+    font-size: 11px;
+    color: rgba(160, 160, 160, 1);
+    text-align: center;
+}

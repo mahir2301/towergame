@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="Hotbar.uss" />
+    <ui:VisualElement name="hotbar" class="hotbar">
+        <ui:VisualElement name="slots" class="hotbar-slots" />
+    </ui:VisualElement>
+</ui:UXML>
