@@ -2,6 +2,7 @@ using Data;
 using Managers;
 using Unity.Netcode;
 using UnityEngine;
+using UI;
 using Visuals;
 
 namespace Runtime
@@ -51,6 +52,12 @@ namespace Runtime
             {
                 EnergyNetworkManager.Instance?.RegisterEnergyRuntime(this);
             }
+
+            var overlay = FindFirstObjectByType<WorldOverlayManager>();
+            if (overlay != null)
+            {
+                overlay.RegisterEnergy(this);
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -60,6 +67,12 @@ namespace Runtime
             if (IsServer)
             {
                 EnergyNetworkManager.Instance?.UnregisterEnergyRuntime(this);
+            }
+
+            var overlay = FindFirstObjectByType<WorldOverlayManager>();
+            if (overlay != null)
+            {
+                overlay.UnregisterEnergy(this);
             }
         }
 

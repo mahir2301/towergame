@@ -2,6 +2,7 @@ using Data;
 using Managers;
 using Unity.Netcode;
 using UnityEngine;
+using UI;
 using Visuals;
 
 namespace Runtime
@@ -61,12 +62,24 @@ namespace Runtime
                     gm.RegisterOccupiedCells(gridPosition, size, gameObject);
                 }
             }
+
+            var overlay = FindFirstObjectByType<WorldOverlayManager>();
+            if (overlay != null)
+            {
+                overlay.RegisterTower(this);
+            }
         }
 
         public override void OnDestroy()
         {
             base.OnDestroy();
             isPowered.OnValueChanged -= OnPoweredChanged;
+
+            var overlay = FindFirstObjectByType<WorldOverlayManager>();
+            if (overlay != null)
+            {
+                overlay.UnregisterTower(this);
+            }
         }
 
         public void Initialize(Vector2Int gridPos)

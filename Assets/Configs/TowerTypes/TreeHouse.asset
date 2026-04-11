@@ -24,4 +24,4 @@ MonoBehaviour:
     fireRate: 0
     energyCost: 10
   canBePlacedOnWater: 1
-  antennaRange: 0
+  antennaRange: 10

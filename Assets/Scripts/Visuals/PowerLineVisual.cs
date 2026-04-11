@@ -17,12 +17,12 @@ namespace Visuals
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
-        public void Setup(Vector3 start, Vector3 end, float sourceY = 0.5f, float targetY = 2.5f)
+        public void Setup(Vector3 start, Vector3 end)
         {
-            startPos = new Vector3(start.x, sourceY, start.z);
-            endPos = new Vector3(end.x, targetY, end.z);
-            startY = sourceY;
-            endY = targetY;
+            startPos = start;
+            endPos = end;
+            startY = start.y;
+            endY = end.y;
 
             SetupLineRenderer();
             Draw();
