@@ -89,7 +89,7 @@ namespace Managers
             return true;
         }
 
-        public bool TryPlaceElement<T>(Vector2Int gridPos, T prefab, out T instance) where T : MonoBehaviour, IPlaceable
+        public bool TryPlaceElement<T>(Vector2Int gridPos, T prefab, out T instance, bool allowWater = false) where T : MonoBehaviour, IPlaceable
         {
             instance = null;
 
@@ -101,7 +101,7 @@ namespace Managers
 
             Vector2Int size = prefab.Size;
 
-            if (!IsCellAvailable(gridPos, size, prefab.CanBePlacedOnWater))
+            if (!IsCellAvailable(gridPos, size, allowWater))
             {
                 return false;
             }
@@ -175,7 +175,7 @@ namespace Managers
             var basePos = GridToWorld(gridPos, config.Size, 0f);
             var worldPos = basePos + towerPrefab.PlacementOffset;
 
-            if (!TryPlaceElement(gridPos, towerPrefab, out instance))
+            if (!TryPlaceElement(gridPos, towerPrefab, out instance, config.CanBePlacedOnWater))
             {
                 return false;
             }
