@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement class="slot">
+        <ui:Image class="slot-preview" />
+        <ui:Label class="slot-name" />
+        <ui:Label class="slot-key" />
+    </ui:VisualElement>
+</ui:UXML>

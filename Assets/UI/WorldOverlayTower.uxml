@@ -1,0 +1,5 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement class="overlay tower-overlay">
+        <ui:VisualElement name="tower-indicator" class="tower-indicator" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -472,6 +472,8 @@ MonoBehaviour:
   nodeCount: 10
   minDistanceBetweenNodes: 10
   defaultMaxCapacity: 100
+  maxAttemptsPerNode: 100
+  edgePadding: 2
   energyNodeConfig:
   - {fileID: 11400000, guid: cbb71f6aa217ca747a6cbf183665092b, type: 2}
   - {fileID: 11400000, guid: b52d8142ae17cf44fa8dcfdb0967e115, type: 2}
@@ -516,10 +518,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 925dd5378bd5fe84ca6d76ffff4245ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Managers.LakeGenerator
+  ShowTopMostFoldoutHeaderGroup: 1
   lakeCount: 10
   minLakeSize: 15
   maxLakeSize: 35
   minDistanceFromEdge: 3
+  waterSeed: 42
   waterMaterial: {fileID: 2100000, guid: 370476ce8b0471e45937cf2f751f67ba, type: 2}
   gridManager: {fileID: 500300003}
   groundObject: {fileID: 1160422660}
@@ -905,6 +909,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI.HotbarController
   uiDocument: {fileID: 1035705160}
   placementController: {fileID: 526166271}
+  slotTemplate: {fileID: 9197481963319205126, guid: d452bde989e0d423b91ee61027a145ff, type: 3}
 --- !u!114 &1035705160
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1103,7 +1108,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI.WorldOverlayManager
   uiDocument: {fileID: 1578773766}
-  mainCamera: {fileID: 1745330854}
+  overlayStyleSheet: {fileID: 7433441132597879392, guid: d702cf02abdf74540bc6d499cf8a6aba, type: 3}
+  energyTemplate: {fileID: 9197481963319205126, guid: 0e2072ce61c4f45db81bc6515b06884f, type: 3}
+  towerTemplate: {fileID: 9197481963319205126, guid: 262d53b9f6e654c30a7ed85ba342952b, type: 3}
 --- !u!114 &1578773766
 MonoBehaviour:
   m_ObjectHideFlags: 0

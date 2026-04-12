@@ -1,0 +1,36 @@
+.overlay {
+    position: absolute;
+    align-items: center;
+    justify-content: center;
+}
+
+.energy-overlay {
+}
+
+.energy-bg {
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+.energy-label {
+    font-size: 14px;
+    color: rgb(220, 220, 220);
+    -unity-font-style: bold;
+}
+
+.energy-label.high { color: rgb(77, 230, 77); }
+.energy-label.medium { color: rgb(230, 230, 77); }
+.energy-label.low { color: rgb(230, 77, 77); }
+
+.tower-overlay {
+}
+
+.tower-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+}
+
+.tower-indicator.powered { background-color: rgb(51, 230, 51); }
+.tower-indicator.unpowered { background-color: rgb(230, 51, 51); }

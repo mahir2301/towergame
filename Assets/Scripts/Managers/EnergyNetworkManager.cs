@@ -60,7 +60,13 @@ namespace Managers
             if (config == null) return false;
 
             var candidate = FindBestCandidate(tower.GridPosition, config.ClassType, config.Stats.energyCost);
-            if (candidate.energy == null) return false;
+            if (candidate.energy == null)
+            {
+                Debug.LogWarning($"[Energy] No candidate for tower at {tower.GridPosition}, registered nodes={energyNodes.Count}");
+                return false;
+            }
+
+            Debug.Log($"[Energy] Found candidate at {candidate.energy.GridPosition}, antenna={candidate.viaAntennaId}");
 
             if (!candidate.energy.TryConnectTower(tower.NetworkObjectId, config.Stats.energyCost))
                 return false;
@@ -238,14 +244,26 @@ namespace Managers
 
             Transform source;
             if (viaAntennaId != ulong.MaxValue && activeAntennas.TryGetValue(viaAntennaId, out var antenna))
+            {
                 source = antenna.transform;
+                Debug.Log($"[PowerLine] Tower {towerId} connected via antenna {viaAntennaId}");
+            }
             else if (towerToEnergy.TryGetValue(towerId, out var energyId))
             {
                 var energy = FindEnergyNode(energyId);
-                if (energy == null) return;
+                if (energy == null)
+                {
+                    Debug.LogWarning($"[PowerLine] Energy node {energyId} not found for tower {towerId}, registered nodes={energyNodes.Count}");
+                    return;
+                }
                 source = energy.transform;
+                Debug.Log($"[PowerLine] Tower {towerId} connected to energy {energyId} at {source.position}");
             }
-            else return;
+            else
+            {
+                Debug.LogWarning($"[PowerLine] Tower {towerId} has no energy entry in towerToEnergy");
+                return;
+            }
 
             var lineGo = new GameObject($"PowerLine_{towerId}");
             lineGo.transform.SetParent(transform);

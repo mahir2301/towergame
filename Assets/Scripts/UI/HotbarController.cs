@@ -10,16 +10,32 @@ namespace UI
 {
     public class HotbarController : MonoBehaviour
     {
+        private readonly struct PreviewResources
+        {
+            public PreviewResources(GameObject instance, Camera camera, RenderTexture texture)
+            {
+                Instance = instance;
+                Camera = camera;
+                Texture = texture;
+            }
+
+            public GameObject Instance { get; }
+            public Camera Camera { get; }
+            public RenderTexture Texture { get; }
+        }
+
         [SerializeField]
         private UIDocument uiDocument;
         [SerializeField]
         private TowerPlacementController placementController;
+        [SerializeField]
+        private VisualTreeAsset slotTemplate;
+        [SerializeField]
+        private int sortingOrder = 100;
 
         private VisualElement slotsContainer;
         private readonly List<VisualElement> slots = new();
-        private readonly List<RenderTexture> previewTextures = new();
-        private readonly List<GameObject> previewInstances = new();
-        private readonly List<Camera> previewCameras = new();
+        private readonly List<PreviewResources> previews = new();
         private int selectedIndex = -1;
 
         private static readonly Key[] SlotKeys =
@@ -27,10 +43,16 @@ namespace UI
 
         private void Start()
         {
+            uiDocument.sortingOrder = sortingOrder;
+
             var root = uiDocument.rootVisualElement;
             slotsContainer = root.Q<VisualElement>("slots");
+            if (slotsContainer == null) { Debug.LogError("[Hotbar] Missing 'slots' container"); return; }
 
-            var towerTypes = GameRegistry.Instance.TowerTypes;
+            if (slotTemplate == null) { Debug.LogError("[Hotbar] Slot template not assigned!"); return; }
+            if (placementController == null) placementController = FindAnyObjectByType<TowerPlacementController>();
+
+            var towerTypes = GameRegistry.Instance?.TowerTypes;
             if (towerTypes == null || towerTypes.Count == 0)
             {
                 Debug.LogError("[Hotbar] No tower types in GameRegistry!");
@@ -65,30 +87,25 @@ namespace UI
 
         private void CreateSlot(TowerType config, int index)
         {
-            var slot = new VisualElement();
-            slot.AddToClassList("slot");
+            var slot = slotTemplate.CloneTree();
 
-            var previewImage = new Image();
-            previewImage.AddToClassList("slot-preview");
+            var previewImage = slot.Q<Image>("slot-preview");
+            previewImage ??= slot.Q<Image>(className: "slot-preview");
 
             var previewTexture = CreatePreview(config, index);
-            if (previewTexture != null)
-            {
-                previewImage.image = previewTexture;
-            }
+            if (previewImage != null && previewTexture != null) previewImage.image = previewTexture;
 
-            var nameLabel = new Label(config.DisplayName);
-            nameLabel.AddToClassList("slot-name");
+            var nameLabel = slot.Q<Label>(className: "slot-name");
+            if (nameLabel != null) nameLabel.text = config.DisplayName;
 
-            var keyLabel = new Label($"[{index + 1}]");
-            keyLabel.AddToClassList("slot-key");
-
-            slot.Add(previewImage);
-            slot.Add(nameLabel);
-            slot.Add(keyLabel);
+            var keyLabel = slot.Q<Label>(className: "slot-key");
+            if (keyLabel != null) keyLabel.text = $"[{index + 1}]";
 
             var capturedIndex = index;
-            slot.RegisterCallback<ClickEvent>(_ => SelectSlot(capturedIndex));
+            slot.RegisterCallback<ClickEvent>(evt => {
+                evt.StopPropagation();
+                SelectSlot(capturedIndex);
+            });
 
             slotsContainer.Add(slot);
             slots.Add(slot);
@@ -96,17 +113,12 @@ namespace UI
 
         private RenderTexture CreatePreview(TowerType config, int index)
         {
-            if (config.Prefab == null)
-            {
-                return null;
-            }
+            if (config.Prefab == null) return null;
 
             var previewPos = new Vector3(1000f + index * 10f, 0f, 0f);
             var instance = Instantiate(config.Prefab, previewPos, Quaternion.identity);
             instance.name = $"HotbarPreview_{config.Id}";
             PrefabHelper.DisableForPreview(instance);
-
-            previewInstances.Add(instance);
 
             var bounds = new Bounds(previewPos, Vector3.one);
             var renderers = instance.GetComponentsInChildren<Renderer>();
@@ -114,9 +126,7 @@ namespace UI
             {
                 bounds = renderers[0].bounds;
                 for (var i = 1; i < renderers.Length; i++)
-                {
                     bounds.Encapsulate(renderers[i].bounds);
-                }
             }
 
             var cameraGo = new GameObject($"HotbarCamera_{config.Id}");
@@ -142,55 +152,36 @@ namespace UI
             renderTexture.Create();
             camera.targetTexture = renderTexture;
 
-            previewCameras.Add(camera);
-            previewTextures.Add(renderTexture);
+            previews.Add(new PreviewResources(instance, camera, renderTexture));
 
             return renderTexture;
         }
 
         private void SelectSlot(int index)
         {
-            if (index < 0 || index >= slots.Count)
-            {
-                return;
-            }
+            if (index < 0 || index >= slots.Count) return;
 
-            if (selectedIndex >= 0 && selectedIndex < slots.Count)
-            {
-                slots[selectedIndex].RemoveFromClassList("selected");
-            }
+            if (selectedIndex >= 0 && selectedIndex < slots.Count) slots[selectedIndex].RemoveFromClassList("selected");
 
             selectedIndex = index;
             slots[selectedIndex].AddToClassList("selected");
 
-            var towerTypes = GameRegistry.Instance.TowerTypes;
+            var towerTypes = GameRegistry.Instance?.TowerTypes;
             if (towerTypes != null && index < towerTypes.Count && placementController != null)
-            {
                 placementController.SetTowerConfig(towerTypes[index]);
-            }
         }
 
         private void OnDestroy()
         {
-            foreach (var cam in previewCameras)
+            foreach (var preview in previews)
             {
-                if (cam != null)
-                    Destroy(cam.gameObject);
-            }
-
-            foreach (var rt in previewTextures)
-            {
-                if (rt != null)
+                if (preview.Camera != null) Destroy(preview.Camera.gameObject);
+                if (preview.Texture != null)
                 {
-                    rt.Release();
-                    Destroy(rt);
+                    preview.Texture.Release();
+                    Destroy(preview.Texture);
                 }
-            }
-
-            foreach (var go in previewInstances)
-            {
-                if (go != null)
-                    Destroy(go);
+                if (preview.Instance != null) Destroy(preview.Instance);
             }
         }
     }

@@ -2,6 +2,7 @@ using Data;
 using Managers;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 using Utilities;
 
 namespace Controllers
@@ -19,7 +20,6 @@ namespace Controllers
         private Renderer[] ghostRenderers;
         private MaterialPropertyBlock ghostPropertyBlock;
         private Vector2Int? currentGridPos;
-        private bool isInRange;
 
         private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
 
@@ -50,6 +50,13 @@ namespace Controllers
         private void UpdateGhostState()
         {
             if (ghostInstance == null) return;
+
+            if (IsPointerOverAnyUI())
+            {
+                ghostInstance.SetActive(false);
+                currentGridPos = null;
+                return;
+            }
 
             var gridPos = GetMouseGridPosition();
             currentGridPos = gridPos;
@@ -85,8 +92,8 @@ namespace Controllers
             var gridPos = currentGridPos.Value;
 
             var networkManager = EnergyNetworkManager.Instance;
-            isInRange = networkManager != null
-                        && networkManager.IsPositionInRange(gridPos, classType, energyCost);
+            var isInRange = networkManager != null
+                            && networkManager.IsPositionInRange(gridPos, classType, energyCost);
 
             var tintColor = isInRange ? canConnectColor : cannotConnectColor;
             ghostPropertyBlock.SetColor(BaseColorProperty, tintColor);
@@ -113,11 +120,36 @@ namespace Controllers
             if (!context.performed || currentGridPos is null || currentTowerConfig == null)
                 return;
 
+            if (IsPointerOverAnyUI())
+                return;
+
             if (!gridManager.IsCellAvailable(
                     currentGridPos.Value, currentTowerConfig.Size, currentTowerConfig.CanBePlacedOnWater))
                 return;
 
             towerSpawnSystem.RequestPlaceTowerServerRpc(currentTowerConfig.Id, currentGridPos.Value);
+        }
+
+        private static bool IsPointerOverAnyUI()
+        {
+            var mousePos = Mouse.current?.position.ReadValue() ?? (Vector2)Input.mousePosition;
+            var panelInputPos = new Vector2(mousePos.x, Screen.height - mousePos.y);
+            var documents = FindObjectsByType<UIDocument>(FindObjectsSortMode.None);
+
+            for (var i = 0; i < documents.Length; i++)
+            {
+                var root = documents[i].rootVisualElement;
+                var panel = root?.panel;
+                if (panel == null)
+                    continue;
+
+                var panelPos = RuntimePanelUtils.ScreenToPanel(panel, panelInputPos);
+                var hit = panel.Pick(panelPos);
+                if (hit != null && hit != root)
+                    return true;
+            }
+
+            return false;
         }
 
         public void SetTowerConfig(TowerType config)
