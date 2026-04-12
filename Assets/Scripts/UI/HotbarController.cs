@@ -4,6 +4,7 @@ using Data;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
+using Utilities;
 
 namespace UI
 {
@@ -103,21 +104,7 @@ namespace UI
             var previewPos = new Vector3(1000f + index * 10f, 0f, 0f);
             var instance = Instantiate(config.Prefab, previewPos, Quaternion.identity);
             instance.name = $"HotbarPreview_{config.Id}";
-
-            foreach (var mb in instance.GetComponentsInChildren<MonoBehaviour>())
-            {
-                mb.enabled = false;
-            }
-
-            foreach (var col in instance.GetComponentsInChildren<Collider>())
-            {
-                col.enabled = false;
-            }
-
-            foreach (var rb in instance.GetComponentsInChildren<Rigidbody>())
-            {
-                rb.isKinematic = true;
-            }
+            PrefabHelper.DisableForPreview(instance);
 
             previewInstances.Add(instance);
 
@@ -185,6 +172,12 @@ namespace UI
 
         private void OnDestroy()
         {
+            foreach (var cam in previewCameras)
+            {
+                if (cam != null)
+                    Destroy(cam.gameObject);
+            }
+
             foreach (var rt in previewTextures)
             {
                 if (rt != null)
@@ -197,17 +190,7 @@ namespace UI
             foreach (var go in previewInstances)
             {
                 if (go != null)
-                {
                     Destroy(go);
-                }
-            }
-
-            foreach (var cam in previewCameras)
-            {
-                if (cam != null)
-                {
-                    Destroy(cam.gameObject);
-                }
             }
         }
     }

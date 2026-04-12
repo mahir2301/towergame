@@ -50,7 +50,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 10eb4f24a1732154e8211900742a2adc, type: 3}
       propertyPath: m_Name
-      value: WaterTower
+      value: TreeHouse
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -160,7 +160,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Runtime.TowerRuntime
   ShowTopMostFoldoutHeaderGroup: 1
-  configId: 
-  placementOffset: {x: 0.4, y: 1.6, z: -0.4}
+  config: {fileID: 11400000, guid: 3bab7a44e7a0fbc419671d3f1496e918, type: 2}
   gridPosition: {x: 0, y: 0}
-  size: {x: 2, y: 2}

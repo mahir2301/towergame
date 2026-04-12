@@ -1,4 +1,5 @@
 using UnityEngine;
+using Utilities;
 
 namespace Visuals
 {
@@ -38,16 +39,7 @@ namespace Visuals
             lineRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lineRenderer.receiveShadows = false;
 
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null)
-            {
-                shader = Shader.Find("Sprites/Default");
-            }
-
-            var mat = new Material(shader);
-            mat.SetFloat("_Surface", 1);
-            mat.SetFloat("_Blend", 0);
-            mat.SetColor(BaseColorId, lineColor);
+            var mat = GameShaders.CreateLitMaterial(lineColor);
             lineRenderer.material = mat;
         }
 

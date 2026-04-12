@@ -7,25 +7,19 @@ using Visuals;
 
 namespace Runtime
 {
-    public class EnergyRuntime : NetworkBehaviour, IPlaceable
+    public class EnergyRuntime : NetworkBehaviour
     {
-        [SerializeField]
-        private EnergyType config;
-        [SerializeField]
-        private Vector2Int gridPosition;
-        [SerializeField]
-        private int maxCapacity;
+        [Header("Configuration")]
+        [SerializeField] private EnergyType config;
+        [SerializeField] private Vector2Int gridPosition;
+        [SerializeField] private int maxCapacity;
 
         private readonly NetworkVariable<int> currentCapacity = new();
         private RangeIndicator rangeIndicator;
 
         public EnergyType Config => config;
-        public Vector2Int GridPosition
-        {
-            get => gridPosition;
-            set => gridPosition = value;
-        }
-        public Vector2Int Size => new(1, 1);
+        public Vector2Int GridPosition { get => gridPosition; set => gridPosition = value; }
+        public Vector2Int Size => Vector2Int.one;
         public bool CanBePlacedOnWater => false;
         public int MaxCapacity => maxCapacity;
         public int CurrentCapacity => currentCapacity.Value;
@@ -50,14 +44,11 @@ namespace Runtime
 
             if (IsServer)
             {
+                currentCapacity.Value = maxCapacity;
                 EnergyNetworkManager.Instance?.RegisterEnergyRuntime(this);
             }
 
-            var overlay = FindFirstObjectByType<WorldOverlayManager>();
-            if (overlay != null)
-            {
-                overlay.RegisterEnergy(this);
-            }
+            WorldOverlayManager.Instance?.RegisterEnergy(this);
         }
 
         public override void OnNetworkDespawn()
@@ -65,20 +56,9 @@ namespace Runtime
             base.OnNetworkDespawn();
 
             if (IsServer)
-            {
                 EnergyNetworkManager.Instance?.UnregisterEnergyRuntime(this);
-            }
 
-            var overlay = FindFirstObjectByType<WorldOverlayManager>();
-            if (overlay != null)
-            {
-                overlay.UnregisterEnergy(this);
-            }
-        }
-
-        public void Initialize(Vector2Int gridPos)
-        {
-            gridPosition = gridPos;
+            WorldOverlayManager.Instance?.UnregisterEnergy(this);
         }
 
         public void Initialize(EnergyType energyConfig, int capacity, Vector2Int gridPos)
@@ -86,19 +66,12 @@ namespace Runtime
             config = energyConfig;
             maxCapacity = capacity;
             gridPosition = gridPos;
-
-            if (IsServer)
-            {
-                currentCapacity.Value = capacity;
-            }
         }
 
         public bool TryConnectTower(ulong towerNetId, int energyCost)
         {
             if (!IsServer || !HasCapacity(energyCost))
-            {
                 return false;
-            }
 
             currentCapacity.Value -= energyCost;
             ConnectedTowerIds.Add(towerNetId);
@@ -108,9 +81,7 @@ namespace Runtime
         public bool TryConnectPlayer(ulong playerNetId, int energyCost)
         {
             if (!IsServer || !HasCapacity(energyCost))
-            {
                 return false;
-            }
 
             currentCapacity.Value -= energyCost;
             ConnectedPlayerIds.Add(playerNetId);
@@ -119,10 +90,7 @@ namespace Runtime
 
         public void DisconnectTower(ulong towerNetId, int energyCost)
         {
-            if (!IsServer)
-            {
-                return;
-            }
+            if (!IsServer) return;
 
             ConnectedTowerIds.Remove(towerNetId);
             currentCapacity.Value = Mathf.Min(currentCapacity.Value + energyCost, maxCapacity);
@@ -130,10 +98,7 @@ namespace Runtime
 
         public void DisconnectPlayer(ulong playerNetId, int energyCost)
         {
-            if (!IsServer)
-            {
-                return;
-            }
+            if (!IsServer) return;
 
             ConnectedPlayerIds.Remove(playerNetId);
             currentCapacity.Value = Mathf.Min(currentCapacity.Value + energyCost, maxCapacity);
@@ -151,10 +116,7 @@ namespace Runtime
 
         private void CreateRangeIndicator()
         {
-            if (EnergyRange <= 0)
-            {
-                return;
-            }
+            if (EnergyRange <= 0) return;
 
             var indicatorGo = new GameObject("EnergyRangeIndicator");
             indicatorGo.transform.SetParent(transform);

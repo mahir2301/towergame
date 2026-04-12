@@ -72,9 +72,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Runtime.TowerRuntime
   ShowTopMostFoldoutHeaderGroup: 1
-  configId: 
+  config: {fileID: 11400000, guid: 057334ceb40dc8f48b4a92a954322436, type: 2}
   gridPosition: {x: 0, y: 0}
-  size: {x: 1, y: 1}
 --- !u!1 &4289498985000808213
 GameObject:
   m_ObjectHideFlags: 0

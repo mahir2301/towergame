@@ -7,26 +7,44 @@ namespace UI
 {
     public class WorldOverlayManager : MonoBehaviour
     {
-        [SerializeField]
-        private UIDocument uiDocument;
-        [SerializeField]
-        private Camera mainCamera;
+        public static WorldOverlayManager Instance { get; private set; }
+
+        [SerializeField] private UIDocument uiDocument;
+        [SerializeField] private Camera mainCamera;
 
         private VisualElement root;
+
+        private VisualElement Root
+        {
+            get
+            {
+                if (root == null && uiDocument != null)
+                    root = uiDocument.rootVisualElement;
+                return root;
+            }
+        }
         private readonly Dictionary<EnergyRuntime, EnergyOverlayEntry> energyOverlays = new();
         private readonly Dictionary<TowerRuntime, TowerOverlayEntry> towerOverlays = new();
 
-        private void Start()
+        private void Awake()
         {
-            root = uiDocument.rootVisualElement;
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
 
         private void LateUpdate()
         {
-            if (mainCamera == null)
-            {
-                return;
-            }
+            if (mainCamera == null) return;
 
             foreach (var kvp in energyOverlays)
             {
@@ -43,40 +61,34 @@ namespace UI
 
         public void RegisterEnergy(EnergyRuntime energy)
         {
-            if (energyOverlays.ContainsKey(energy))
-            {
-                return;
-            }
-
-            var entry = CreateEnergyOverlay(energy);
-            energyOverlays[energy] = entry;
+            if (energyOverlays.ContainsKey(energy)) return;
+            var r = Root;
+            if (r == null) return;
+            energyOverlays[energy] = CreateEnergyOverlay(energy);
         }
 
         public void UnregisterEnergy(EnergyRuntime energy)
         {
             if (energyOverlays.TryGetValue(energy, out var entry))
             {
-                root.Remove(entry.container);
+                Root.Remove(entry.container);
                 energyOverlays.Remove(energy);
             }
         }
 
         public void RegisterTower(TowerRuntime tower)
         {
-            if (towerOverlays.ContainsKey(tower))
-            {
-                return;
-            }
-
-            var entry = CreateTowerOverlay(tower);
-            towerOverlays[tower] = entry;
+            if (towerOverlays.ContainsKey(tower)) return;
+            var r = Root;
+            if (r == null) return;
+            towerOverlays[tower] = CreateTowerOverlay(tower);
         }
 
         public void UnregisterTower(TowerRuntime tower)
         {
             if (towerOverlays.TryGetValue(tower, out var entry))
             {
-                root.Remove(entry.container);
+                Root.Remove(entry.container);
                 towerOverlays.Remove(tower);
             }
         }
@@ -106,7 +118,7 @@ namespace UI
 
             bg.Add(label);
             container.Add(bg);
-            root.Add(container);
+            Root.Add(container);
 
             var visualCenter = GetVisualCenter(energy.transform, 1f);
 
@@ -130,7 +142,7 @@ namespace UI
             indicator.style.backgroundColor = Color.red;
 
             container.Add(indicator);
-            root.Add(container);
+            Root.Add(container);
 
             var visualCenter = GetVisualCenter(tower.transform, 1.5f);
 
@@ -144,9 +156,7 @@ namespace UI
             {
                 var bounds = renderers[0].bounds;
                 for (var i = 1; i < renderers.Length; i++)
-                {
                     bounds.Encapsulate(renderers[i].bounds);
-                }
                 return bounds.center;
             }
 

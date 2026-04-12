@@ -154,6 +154,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Runtime.EnergyRuntime
   ShowTopMostFoldoutHeaderGroup: 1
+  configId: wood
   config: {fileID: 11400000, guid: b52d8142ae17cf44fa8dcfdb0967e115, type: 2}
   gridPosition: {x: 0, y: 0}
   maxCapacity: 0
