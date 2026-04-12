@@ -30,14 +30,6 @@ namespace Data
         public Vector3 PlacementOffset => placementOffset;
         public TowerStats Stats => stats;
         public bool IsAntenna => stats.antennaRange > 0;
-
-        public bool IsValid()
-        {
-            return !string.IsNullOrEmpty(id)
-                   && prefab != null
-                   && size.x > 0 && size.y > 0
-                   && stats.maxHealth > 0;
-        }
     }
 
     [System.Serializable]

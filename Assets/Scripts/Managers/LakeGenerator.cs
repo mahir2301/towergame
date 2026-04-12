@@ -1,32 +1,31 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Managers
 {
-    public class LakeGenerator : MonoBehaviour
+    public class LakeGenerator : NetworkBehaviour
     {
-        [SerializeField]
-        private int lakeCount = 3;
-        [SerializeField]
-        private int minLakeSize = 5;
-        [SerializeField]
-        private int maxLakeSize = 10;
-        [SerializeField]
-        private int minDistanceFromEdge = 3;
-        [SerializeField]
-        private Material waterMaterial;
-        [SerializeField]
-        private GridManager gridManager;
-        [SerializeField]
-        private GameObject groundObject;
+        [SerializeField] private int lakeCount = 3;
+        [SerializeField] private int minLakeSize = 5;
+        [SerializeField] private int maxLakeSize = 10;
+        [SerializeField] private int minDistanceFromEdge = 3;
+        [SerializeField] private int waterSeed = 42;
+        [SerializeField] private Material waterMaterial;
+        [SerializeField] private GridManager gridManager;
+        [SerializeField] private GameObject groundObject;
 
-        private void Start()
+        public override void OnNetworkSpawn()
         {
+            base.OnNetworkSpawn();
             GenerateLakes();
         }
 
         private void GenerateLakes()
         {
+            var state = Random.state;
+            Random.InitState(waterSeed);
+
             var gridSize = gridManager.GridSize;
             var quadrantWidth = gridSize.x / 2;
             var quadrantHeight = gridSize.y / 2;
@@ -48,11 +47,10 @@ namespace Managers
                 var offsetX = Random.Range(minX, maxX);
                 var offsetY = Random.Range(minY, maxY);
 
-                var lakeX = quadrantX + offsetX;
-                var lakeY = quadrantY + offsetY;
-
-                CreateLake(lakeX, lakeY, lakeWidth, lakeHeight);
+                CreateLake(quadrantX + offsetX, quadrantY + offsetY, lakeWidth, lakeHeight);
             }
+
+            Random.state = state;
         }
 
         private void CreateLake(int startX, int startY, int width, int height)
@@ -60,13 +58,8 @@ namespace Managers
             var waterCells = new List<Vector2Int>();
 
             for (var x = 0; x < width; x++)
-            {
                 for (var y = 0; y < height; y++)
-                {
-                    var cell = new Vector2Int(startX + x, startY + y);
-                    waterCells.Add(cell);
-                }
-            }
+                    waterCells.Add(new Vector2Int(startX + x, startY + y));
 
             gridManager.MarkCellsAsWater(waterCells);
             CreateWaterVisuals(startX, startY, width, height);
@@ -85,9 +78,7 @@ namespace Managers
             waterPlane.GetComponent<MeshRenderer>().material = waterMaterial;
 
             if (groundObject != null)
-            {
                 waterPlane.transform.SetParent(groundObject.transform);
-            }
         }
     }
 }

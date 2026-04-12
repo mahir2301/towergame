@@ -1,5 +1,4 @@
 using Data;
-using Runtime;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -49,8 +48,6 @@ namespace Managers
                     placed++;
                     placedNodesPos.Add(newPos);
                 }
-
-                Debug.Log($"[MapSetup] Placed {placed}/{nodeCount} {node.DisplayName} nodes in {attempts} attempts");
             }
         }
 

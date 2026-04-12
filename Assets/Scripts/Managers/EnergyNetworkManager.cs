@@ -11,10 +11,8 @@ namespace Managers
     {
         public static EnergyNetworkManager Instance { get; private set; }
 
-        private readonly List<EnergyRuntime> energyRuntimes = new();
-        private readonly Dictionary<ulong, EnergyRuntime> energyById = new();
+        private readonly List<EnergyRuntime> energyNodes = new();
         private readonly Dictionary<ulong, TowerRuntime> activeAntennas = new();
-        private readonly Dictionary<ulong, List<ulong>> antennaDependents = new();
         private readonly Dictionary<ulong, ulong> towerToEnergy = new();
         private readonly Dictionary<ulong, PowerLineVisual> powerLines = new();
 
@@ -37,28 +35,21 @@ namespace Managers
 
         public void RegisterEnergyRuntime(EnergyRuntime runtime)
         {
-            energyRuntimes.Add(runtime);
-            energyById[runtime.NetworkObjectId] = runtime;
+            energyNodes.Add(runtime);
         }
 
         public void UnregisterEnergyRuntime(EnergyRuntime runtime)
         {
-            var energyId = runtime.NetworkObjectId;
-            energyRuntimes.Remove(runtime);
-            energyById.Remove(energyId);
+            energyNodes.Remove(runtime);
 
             var toDisconnect = new List<ulong>();
             foreach (var kvp in towerToEnergy)
-            {
-                if (kvp.Value == energyId)
+                if (kvp.Value == runtime.NetworkObjectId)
                     toDisconnect.Add(kvp.Key);
-            }
 
             foreach (var towerId in toDisconnect)
-            {
                 if (TryGetTower(towerId, out var tower))
-                    DisconnectTowerInternal(tower, cascadeAntenna: true);
-            }
+                    DisconnectTower(tower);
         }
 
         public bool TryConnectTowerToEnergy(TowerRuntime tower)
@@ -68,31 +59,18 @@ namespace Managers
             var config = tower.Config;
             if (config == null) return false;
 
-            var energyCost = config.Stats.energyCost;
-            var candidate = FindBestEnergyCandidate(tower.GridPosition, config.ClassType, energyCost);
+            var candidate = FindBestCandidate(tower.GridPosition, config.ClassType, config.Stats.energyCost);
+            if (candidate.energy == null) return false;
 
-            if (candidate.energy == null)
-                return false;
-
-            if (!candidate.energy.TryConnectTower(tower.NetworkObjectId, energyCost))
+            if (!candidate.energy.TryConnectTower(tower.NetworkObjectId, config.Stats.energyCost))
                 return false;
 
             var towerId = tower.NetworkObjectId;
-            var energyId = candidate.energy.NetworkObjectId;
-            tower.SetConnection(energyId, candidate.viaAntennaId);
-            towerToEnergy[towerId] = energyId;
+            tower.SetConnection(candidate.energy.NetworkObjectId, candidate.viaAntennaId);
+            towerToEnergy[towerId] = candidate.energy.NetworkObjectId;
 
             if (config.IsAntenna)
-            {
                 activeAntennas[towerId] = tower;
-                antennaDependents[towerId] = new List<ulong>();
-            }
-
-            if (candidate.viaAntennaId != ulong.MaxValue
-                && antennaDependents.TryGetValue(candidate.viaAntennaId, out var deps))
-            {
-                deps.Add(towerId);
-            }
 
             CreatePowerLine(tower, candidate.viaAntennaId);
             return true;
@@ -101,33 +79,24 @@ namespace Managers
         public void DisconnectTower(TowerRuntime tower)
         {
             if (!IsServer) return;
-            DisconnectTowerInternal(tower, cascadeAntenna: true);
-        }
 
-        private void DisconnectTowerInternal(TowerRuntime tower, bool cascadeAntenna)
-        {
             var towerId = tower.NetworkObjectId;
             var config = tower.Config;
+            if (config == null) return;
 
-            if (towerToEnergy.TryGetValue(towerId, out var energyId)
-                && energyById.TryGetValue(energyId, out var energy)
-                && config != null)
+            // Refund capacity to energy node
+            if (towerToEnergy.TryGetValue(towerId, out var energyId))
             {
-                energy.DisconnectTower(towerId, config.Stats.energyCost);
+                var energy = FindEnergyNode(energyId);
+                energy?.DisconnectTower(towerId, config.Stats.energyCost);
                 towerToEnergy.Remove(towerId);
             }
 
-            if (tower.ConnectedViaAntennaId != ulong.MaxValue
-                && antennaDependents.TryGetValue(tower.ConnectedViaAntennaId, out var deps))
-            {
-                deps.Remove(towerId);
-            }
-
-            if (cascadeAntenna && config != null && config.IsAntenna)
+            // If this tower is an antenna, cascade disconnect all dependents
+            if (config.IsAntenna)
             {
                 DisconnectAntennaDependents(towerId);
                 activeAntennas.Remove(towerId);
-                antennaDependents.Remove(towerId);
             }
 
             DestroyPowerLine(towerId);
@@ -136,43 +105,48 @@ namespace Managers
 
         private void DisconnectAntennaDependents(ulong antennaId)
         {
-            if (!antennaDependents.TryGetValue(antennaId, out var dependents))
-                return;
+            var dependents = new List<ulong>();
+            foreach (var kvp in towerToEnergy)
+                if (kvp.Value == antennaId)
+                    dependents.Add(kvp.Key);
 
-            var snapshot = new List<ulong>(dependents);
-            foreach (var dependentId in snapshot)
+            foreach (var depId in dependents)
             {
-                if (TryGetTower(dependentId, out var dependent))
-                    DisconnectTowerInternal(dependent, cascadeAntenna: true);
+                if (!TryGetTower(depId, out var dep)) continue;
+
+                // Refund capacity to the antenna's energy source
+                if (towerToEnergy.TryGetValue(antennaId, out var energyId))
+                {
+                    var energy = FindEnergyNode(energyId);
+                    energy?.DisconnectTower(depId, dep.Config?.Stats.energyCost ?? 0);
+                }
+
+                towerToEnergy.Remove(depId);
+                DestroyPowerLine(depId);
+                dep.ClearConnection();
             }
-            dependents.Clear();
         }
 
         public bool IsPositionInRange(Vector2Int pos, ClassType classType, int energyCost)
         {
-            foreach (var energy in energyRuntimes)
+            foreach (var energy in energyNodes)
             {
-                if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost))
-                    continue;
-
+                if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost)) continue;
                 if (Vector2Int.Distance(pos, energy.GridPosition) <= energy.EnergyRange)
                     return true;
             }
 
             foreach (var kvp in activeAntennas)
             {
-                var antenna = kvp.Value;
-                var antennaConfig = antenna.Config;
+                var antennaConfig = kvp.Value.Config;
                 if (antennaConfig == null) continue;
 
-                if (Vector2Int.Distance(pos, antenna.GridPosition) > antennaConfig.Stats.antennaRange)
+                if (Vector2Int.Distance(pos, kvp.Value.GridPosition) > antennaConfig.Stats.antennaRange)
                     continue;
 
-                if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)
-                    || !energyById.TryGetValue(energyId, out var energy))
-                    continue;
-
-                if (energy.CanConnectClass(classType) && energy.HasCapacity(energyCost))
+                if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)) continue;
+                var energy = FindEnergyNode(energyId);
+                if (energy != null && energy.CanConnectClass(classType) && energy.HasCapacity(energyCost))
                     return true;
             }
 
@@ -181,95 +155,80 @@ namespace Managers
 
         public float GetEnergyRangeForPosition(Vector2Int pos, ClassType classType, int energyCost)
         {
-            var bestRange = -1f;
+            var best = -1f;
 
-            foreach (var energy in energyRuntimes)
+            foreach (var energy in energyNodes)
             {
-                if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost))
-                    continue;
-
+                if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost)) continue;
                 var dist = Vector2Int.Distance(pos, energy.GridPosition);
                 if (dist <= energy.EnergyRange)
-                {
-                    var remaining = energy.EnergyRange - dist;
-                    if (remaining > bestRange)
-                        bestRange = remaining;
-                }
+                    best = Mathf.Max(best, energy.EnergyRange - dist);
             }
 
             foreach (var kvp in activeAntennas)
             {
-                var antenna = kvp.Value;
-                var antennaConfig = antenna.Config;
-                if (antennaConfig == null) continue;
+                var cfg = kvp.Value.Config;
+                if (cfg == null) continue;
+                var range = cfg.Stats.antennaRange;
+                if (Vector2Int.Distance(pos, kvp.Value.GridPosition) > range) continue;
 
-                var antennaRange = antennaConfig.Stats.antennaRange;
-                if (Vector2Int.Distance(pos, antenna.GridPosition) > antennaRange)
-                    continue;
-
-                if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)
-                    || !energyById.TryGetValue(energyId, out var energy))
-                    continue;
-
-                if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost))
-                    continue;
-
-                var remaining = antennaRange - Vector2Int.Distance(pos, antenna.GridPosition);
-                if (remaining > bestRange)
-                    bestRange = remaining;
+                if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)) continue;
+                var energy = FindEnergyNode(energyId);
+                if (energy != null && energy.CanConnectClass(classType) && energy.HasCapacity(energyCost))
+                    best = Mathf.Max(best, range - Vector2Int.Distance(pos, kvp.Value.GridPosition));
             }
 
-            return bestRange;
+            return best;
         }
 
-        private (EnergyRuntime energy, ulong viaAntennaId) FindBestEnergyCandidate(
+        private (EnergyRuntime energy, ulong viaAntennaId) FindBestCandidate(
             Vector2Int pos, ClassType classType, int energyCost)
         {
-            EnergyRuntime bestEnergy = null;
-            var bestDistance = float.MaxValue;
-            var bestAntennaId = ulong.MaxValue;
+            EnergyRuntime best = null;
+            var bestDist = float.MaxValue;
+            var bestAntenna = ulong.MaxValue;
 
-            foreach (var energy in energyRuntimes)
+            foreach (var energy in energyNodes)
             {
-                if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost))
-                    continue;
-
+                if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost)) continue;
                 var dist = Vector2Int.Distance(pos, energy.GridPosition);
-                if (dist <= energy.EnergyRange && dist < bestDistance)
+                if (dist <= energy.EnergyRange && dist < bestDist)
                 {
-                    bestDistance = dist;
-                    bestEnergy = energy;
-                    bestAntennaId = ulong.MaxValue;
+                    bestDist = dist;
+                    best = energy;
+                    bestAntenna = ulong.MaxValue;
                 }
             }
 
             foreach (var kvp in activeAntennas)
             {
-                var antenna = kvp.Value;
-                var antennaConfig = antenna.Config;
-                if (antennaConfig == null) continue;
+                var cfg = kvp.Value.Config;
+                if (cfg == null) continue;
+                var range = cfg.Stats.antennaRange;
+                if (Vector2Int.Distance(pos, kvp.Value.GridPosition) > range) continue;
 
-                var antennaRange = antennaConfig.Stats.antennaRange;
-                if (Vector2Int.Distance(pos, antenna.GridPosition) > antennaRange)
-                    continue;
+                if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)) continue;
+                var energy = FindEnergyNode(energyId);
+                if (energy == null || !energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost)) continue;
 
-                if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)
-                    || !energyById.TryGetValue(energyId, out var energy))
-                    continue;
-
-                if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost))
-                    continue;
-
-                var dist = Vector2Int.Distance(pos, antenna.GridPosition);
-                if (dist < bestDistance)
+                var dist = Vector2Int.Distance(pos, kvp.Value.GridPosition);
+                if (dist < bestDist)
                 {
-                    bestDistance = dist;
-                    bestEnergy = energy;
-                    bestAntennaId = kvp.Key;
+                    bestDist = dist;
+                    best = energy;
+                    bestAntenna = kvp.Key;
                 }
             }
 
-            return (bestEnergy, bestAntennaId);
+            return (best, bestAntenna);
+        }
+
+        private EnergyRuntime FindEnergyNode(ulong networkId)
+        {
+            foreach (var e in energyNodes)
+                if (e.NetworkObjectId == networkId)
+                    return e;
+            return null;
         }
 
         private void CreatePowerLine(TowerRuntime tower, ulong viaAntennaId)
@@ -277,27 +236,22 @@ namespace Managers
             var towerId = tower.NetworkObjectId;
             DestroyPowerLine(towerId);
 
-            Transform sourceTransform;
-
+            Transform source;
             if (viaAntennaId != ulong.MaxValue && activeAntennas.TryGetValue(viaAntennaId, out var antenna))
+                source = antenna.transform;
+            else if (towerToEnergy.TryGetValue(towerId, out var energyId))
             {
-                sourceTransform = antenna.transform;
+                var energy = FindEnergyNode(energyId);
+                if (energy == null) return;
+                source = energy.transform;
             }
-            else if (towerToEnergy.TryGetValue(towerId, out var energyId)
-                     && energyById.TryGetValue(energyId, out var energy))
-            {
-                sourceTransform = energy.transform;
-            }
-            else
-            {
-                return;
-            }
+            else return;
 
             var lineGo = new GameObject($"PowerLine_{towerId}");
             lineGo.transform.SetParent(transform);
-            var powerLine = lineGo.AddComponent<PowerLineVisual>();
-            powerLine.Setup(sourceTransform.position, tower.transform.position);
-            powerLines[towerId] = powerLine;
+            var line = lineGo.AddComponent<PowerLineVisual>();
+            line.Setup(source.position, tower.transform.position);
+            powerLines[towerId] = line;
         }
 
         private void DestroyPowerLine(ulong towerId)
@@ -305,16 +259,15 @@ namespace Managers
             if (powerLines.TryGetValue(towerId, out var line))
             {
                 powerLines.Remove(towerId);
-                if (line != null)
-                    Destroy(line.gameObject);
+                if (line != null) Destroy(line.gameObject);
             }
         }
 
         private bool TryGetTower(ulong towerId, out TowerRuntime tower)
         {
             tower = null;
-            return NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(towerId, out var netObj)
-                   && (tower = netObj.GetComponent<TowerRuntime>()) != null;
+            return NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(towerId, out var obj)
+                   && (tower = obj.GetComponent<TowerRuntime>()) != null;
         }
     }
 }

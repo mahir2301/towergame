@@ -19,19 +19,9 @@ namespace Runtime
 
         public EnergyType Config => config;
         public Vector2Int GridPosition { get => gridPosition; set => gridPosition = value; }
-        public Vector2Int Size => Vector2Int.one;
-        public bool CanBePlacedOnWater => false;
         public int MaxCapacity => maxCapacity;
         public int CurrentCapacity => currentCapacity.Value;
         public int EnergyRange => config != null ? config.EnergyRange : 0;
-        public NetworkList<ulong> ConnectedTowerIds { get; private set; }
-        public NetworkList<ulong> ConnectedPlayerIds { get; private set; }
-
-        private void Awake()
-        {
-            ConnectedTowerIds = new NetworkList<ulong>();
-            ConnectedPlayerIds = new NetworkList<ulong>();
-        }
 
         private void Start()
         {
@@ -74,33 +64,12 @@ namespace Runtime
                 return false;
 
             currentCapacity.Value -= energyCost;
-            ConnectedTowerIds.Add(towerNetId);
-            return true;
-        }
-
-        public bool TryConnectPlayer(ulong playerNetId, int energyCost)
-        {
-            if (!IsServer || !HasCapacity(energyCost))
-                return false;
-
-            currentCapacity.Value -= energyCost;
-            ConnectedPlayerIds.Add(playerNetId);
             return true;
         }
 
         public void DisconnectTower(ulong towerNetId, int energyCost)
         {
             if (!IsServer) return;
-
-            ConnectedTowerIds.Remove(towerNetId);
-            currentCapacity.Value = Mathf.Min(currentCapacity.Value + energyCost, maxCapacity);
-        }
-
-        public void DisconnectPlayer(ulong playerNetId, int energyCost)
-        {
-            if (!IsServer) return;
-
-            ConnectedPlayerIds.Remove(playerNetId);
             currentCapacity.Value = Mathf.Min(currentCapacity.Value + energyCost, maxCapacity);
         }
 
