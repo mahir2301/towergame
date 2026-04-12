@@ -23,6 +23,16 @@ namespace Controllers
         private float zoomSensitivity;
         [SerializeField]
         private float zoomAcceleration;
+        [SerializeField]
+        private float jumpHeight = 1f;
+        [SerializeField]
+        private float coyoteTime = 0.1f;
+        [SerializeField]
+        private float jumpBufferTime = 0.1f;
+        [SerializeField]
+        private float groundCheckDistance = 1.1f;
+        [SerializeField]
+        private LayerMask groundLayers = ~0;
 
         [SerializeField]
         private TowerPlacementController placementController;
@@ -35,6 +45,8 @@ namespace Controllers
         private Vector3 targetMovementVector;
         private Vector3 currentMovementVector;
         private float targetZoom;
+        private float lastGroundedTime = float.NegativeInfinity;
+        private float jumpPressedTime = float.NegativeInfinity;
 
         private readonly Matrix4x4 isoMatrix = Matrix4x4.Rotate(Quaternion.Euler(0, 45, 0));
 
@@ -58,10 +70,19 @@ namespace Controllers
             placementController.OnPlaceTower(context);
         }
 
+        public void OnJump(InputAction.CallbackContext context)
+        {
+            if (context.performed)
+            {
+                jumpPressedTime = Time.time;
+            }
+        }
+
         private void FixedUpdate()
         {
             HandleMovement();
             HandleRotation();
+            HandleJump();
         }
 
         private void Update()
@@ -117,6 +138,34 @@ namespace Controllers
 
             mainCamera.Lens.OrthographicSize = Mathf.Lerp(mainCamera.Lens.OrthographicSize, targetZoom,
                 Time.deltaTime * zoomAcceleration);
+        }
+
+        private void HandleJump()
+        {
+            if (IsGrounded())
+            {
+                lastGroundedTime = Time.time;
+            }
+
+            var canUseCoyote = Time.time - lastGroundedTime <= coyoteTime;
+            var hasBufferedJump = Time.time - jumpPressedTime <= jumpBufferTime;
+            if (!canUseCoyote || !hasBufferedJump)
+            {
+                return;
+            }
+
+            jumpPressedTime = float.NegativeInfinity;
+            lastGroundedTime = float.NegativeInfinity;
+
+            var velocity = rigidBody.linearVelocity;
+            velocity.y = Mathf.Sqrt(2f * Mathf.Abs(Physics.gravity.y) * jumpHeight);
+            rigidBody.linearVelocity = velocity;
+        }
+
+        private bool IsGrounded()
+        {
+            var origin = rigidBody.position + Vector3.up * 0.05f;
+            return Physics.Raycast(origin, Vector3.down, groundCheckDistance, groundLayers, QueryTriggerInteraction.Ignore);
         }
     }
 }

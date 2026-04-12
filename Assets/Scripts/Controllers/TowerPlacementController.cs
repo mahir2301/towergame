@@ -132,7 +132,10 @@ namespace Controllers
 
         private static bool IsPointerOverAnyUI()
         {
-            var mousePos = Mouse.current?.position.ReadValue() ?? (Vector2)Input.mousePosition;
+            if (Mouse.current == null)
+                return false;
+
+            var mousePos = Mouse.current.position.ReadValue();
             var panelInputPos = new Vector2(mousePos.x, Screen.height - mousePos.y);
             var documents = FindObjectsByType<UIDocument>(FindObjectsSortMode.None);
 
