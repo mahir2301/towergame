@@ -1,13 +1,14 @@
-using Game.Shared.Data;
-using Game.Shared.Grid;
-using Game.Shared.Runtime;
-using Game.Shared.Utilities;
+using Client.Visuals;
+using Shared.Data;
+using Shared.Grid;
+using Shared.Runtime;
+using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
-namespace Game.Client.Controllers
+namespace Client.Controllers
 {
     public class TowerPlacementController : MonoBehaviour
     {
@@ -96,7 +97,7 @@ namespace Game.Client.Controllers
             var energyCost = currentTowerConfig.Stats.energyCost;
             var gridPos = currentGridPos.Value;
 
-            var isInRange = IsInEnergyRangeClient(gridPos, classType, energyCost);
+            var isInRange = IsInEnergyRangeFromRegistry(gridPos, classType, energyCost);
 
             var tintColor = isInRange ? canConnectColor : cannotConnectColor;
             ghostPropertyBlock.SetColor(BaseColorProperty, tintColor);
@@ -164,15 +165,15 @@ namespace Game.Client.Controllers
             return false;
         }
 
-        private static bool IsInEnergyRangeClient(Vector2Int pos, ClassType classType, int energyCost)
+        private static bool IsInEnergyRangeFromRegistry(Vector2Int pos, ClassType classType, int energyCost)
         {
-            if (classType == null)
+            if (classType == null || ClientObjectRegistry.Instance == null)
                 return false;
 
-            var energies = FindObjectsByType<EnergyRuntime>(FindObjectsSortMode.None);
-            for (var i = 0; i < energies.Length; i++)
+            var energies = ClientObjectRegistry.Instance.EnergyNodes;
+            foreach (var kvp in energies)
             {
-                var energy = energies[i];
+                var energy = kvp.Value;
                 if (energy == null || !energy.IsSpawned)
                     continue;
                 if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost))
@@ -181,10 +182,10 @@ namespace Game.Client.Controllers
                     return true;
             }
 
-            var towers = FindObjectsByType<TowerRuntime>(FindObjectsSortMode.None);
-            for (var i = 0; i < towers.Length; i++)
+            var towers = ClientObjectRegistry.Instance.Towers;
+            foreach (var kvp in towers)
             {
-                var antenna = towers[i];
+                var antenna = kvp.Value;
                 if (antenna == null || !antenna.IsSpawned || !antenna.IsPowered)
                     continue;
                 if (antenna.Config == null || !antenna.Config.IsAntenna)
@@ -198,15 +199,11 @@ namespace Game.Client.Controllers
                 if (sourceEnergyId == ulong.MaxValue)
                     continue;
 
-                for (var e = 0; e < energies.Length; e++)
-                {
-                    var energy = energies[e];
-                    if (energy == null || !energy.IsSpawned || energy.NetworkObjectId != sourceEnergyId)
-                        continue;
-                    if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost))
-                        continue;
+                if (energies.TryGetValue(sourceEnergyId, out var energy) && energy != null
+                    && energy.IsSpawned
+                    && energy.CanConnectClass(classType)
+                    && energy.HasCapacity(energyCost))
                     return true;
-                }
             }
 
             return false;

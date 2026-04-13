@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Game.Shared.Data
+namespace Shared.Data
 {
     [CreateAssetMenu(fileName = "TowerType", menuName = "towergame/Tower Type")]
     public class TowerType : ScriptableObject

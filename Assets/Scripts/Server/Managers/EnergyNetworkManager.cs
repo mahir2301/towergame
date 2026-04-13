@@ -1,11 +1,11 @@
 using System.Collections.Generic;
-using Game.Shared.Data;
-using Game.Shared.Grid;
-using Game.Shared.Runtime;
+using Shared.Data;
+using Shared.Grid;
+using Shared.Runtime;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Game.Server.Managers
+namespace Server.Managers
 {
     public class EnergyNetworkManager : NetworkBehaviour
     {

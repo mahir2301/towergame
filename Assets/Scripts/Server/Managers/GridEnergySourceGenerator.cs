@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Game.Shared.Data;
-using Game.Shared.Grid;
+using Shared.Data;
+using Shared.Grid;
 using UnityEngine;
 
-namespace Game.Server.Managers
+namespace Server.Managers
 {
     internal static class GridEnergySourceGenerator
     {
@@ -13,6 +13,7 @@ namespace Game.Server.Managers
             Vector2Int gridSize,
             EnergyType[] energyTypes,
             GridManager gridManager,
+            ServerSpawnManager spawnManager,
             int nodeCount,
             int minDistanceBetweenNodes,
             int defaultMaxCapacity,
@@ -41,7 +42,9 @@ namespace Game.Server.Managers
 
                     if (!IsFarEnough(pos, placed, minDistanceBetweenNodes))
                         continue;
-                    if (!gridManager.TryPlaceEnergyRuntime(pos, energyType, defaultMaxCapacity, out _))
+                    if (!gridManager.IsCellAvailable(pos, Vector2Int.one, false))
+                        continue;
+                    if (!spawnManager.TryPlaceEnergyRuntime(pos, energyType, defaultMaxCapacity, out _))
                         continue;
 
                     placed.Add(pos);

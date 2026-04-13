@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using Game.Shared.Runtime;
+using Shared.Runtime;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Game.Client.UI
+namespace Client.UI
 {
     public class WorldOverlayManager : MonoBehaviour
     {

@@ -1,7 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 
-namespace Game.Client.Visuals
+namespace Client.Visuals
 {
     public class GridVisuals : MonoBehaviour
     {

@@ -1,24 +1,26 @@
 using System.Collections.Generic;
-using Game.Client.UI;
-using Game.Shared.Grid;
-using Game.Shared.Runtime;
+using Client.UI;
+using Shared.Grid;
+using Shared.Runtime;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Game.Client.Visuals
+namespace Client.Visuals
 {
     public class ClientRuntimePresentationManager : MonoBehaviour
     {
         [SerializeField] private GridManager gridManager;
 
-        private readonly Dictionary<ulong, EnergyRuntime> registeredEnergy = new();
-        private readonly Dictionary<ulong, TowerRuntime> registeredTowers = new();
+        private readonly HashSet<ulong> registeredEnergy = new();
+        private readonly HashSet<ulong> registeredTowers = new();
         private readonly Dictionary<ulong, RangeIndicator> energyIndicators = new();
         private readonly Dictionary<ulong, RangeIndicator> towerIndicators = new();
 
         private void LateUpdate()
         {
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
+                return;
+            if (ClientObjectRegistry.Instance == null)
                 return;
 
             SyncEnergyPresentation();
@@ -27,20 +29,21 @@ namespace Game.Client.Visuals
 
         private void SyncEnergyPresentation()
         {
+            var energyNodes = ClientObjectRegistry.Instance.EnergyNodes;
             var seen = new HashSet<ulong>();
-            var energyNodes = FindObjectsByType<EnergyRuntime>(FindObjectsSortMode.None);
-            for (var i = 0; i < energyNodes.Length; i++)
+
+            foreach (var kvp in energyNodes)
             {
-                var energy = energyNodes[i];
+                var energy = kvp.Value;
                 if (energy == null || !energy.IsSpawned)
                     continue;
 
                 var id = energy.NetworkObjectId;
                 seen.Add(id);
 
-                if (!registeredEnergy.ContainsKey(id))
+                if (!registeredEnergy.Contains(id))
                 {
-                    registeredEnergy[id] = energy;
+                    registeredEnergy.Add(id);
                     WorldOverlayManager.Instance?.RegisterEnergy(energy);
                     gridManager?.RegisterOccupiedCells(energy.GridPosition, Vector2Int.one, energy.gameObject);
                 }
@@ -59,20 +62,21 @@ namespace Game.Client.Visuals
 
         private void SyncTowerPresentation()
         {
+            var towers = ClientObjectRegistry.Instance.Towers;
             var seen = new HashSet<ulong>();
-            var towers = FindObjectsByType<TowerRuntime>(FindObjectsSortMode.None);
-            for (var i = 0; i < towers.Length; i++)
+
+            foreach (var kvp in towers)
             {
-                var tower = towers[i];
+                var tower = kvp.Value;
                 if (tower == null || !tower.IsSpawned)
                     continue;
 
                 var id = tower.NetworkObjectId;
                 seen.Add(id);
 
-                if (!registeredTowers.ContainsKey(id))
+                if (!registeredTowers.Contains(id))
                 {
-                    registeredTowers[id] = tower;
+                    registeredTowers.Add(id);
                     WorldOverlayManager.Instance?.RegisterTower(tower);
                     gridManager?.RegisterOccupiedCells(tower.GridPosition, tower.Size, tower.gameObject);
                 }
@@ -102,21 +106,19 @@ namespace Game.Client.Visuals
         private void RemoveStaleEnergy(HashSet<ulong> seen)
         {
             var stale = new List<ulong>();
-            foreach (var kvp in registeredEnergy)
+            foreach (var id in registeredEnergy)
             {
-                if (!seen.Contains(kvp.Key))
-                    stale.Add(kvp.Key);
+                if (!seen.Contains(id))
+                    stale.Add(id);
             }
 
             for (var i = 0; i < stale.Count; i++)
             {
                 var id = stale[i];
-                if (registeredEnergy.TryGetValue(id, out var energy))
-                {
-                    WorldOverlayManager.Instance?.UnregisterEnergy(energy);
-                    if (energy != null)
-                        gridManager?.UnregisterOccupiedCells(energy.GridPosition, Vector2Int.one);
-                }
+                var energy = ClientObjectRegistry.Instance.EnergyNodes.TryGetValue(id, out var e) ? e : null;
+                WorldOverlayManager.Instance?.UnregisterEnergy(energy);
+                if (energy != null)
+                    gridManager?.UnregisterOccupiedCells(energy.GridPosition, Vector2Int.one);
                 registeredEnergy.Remove(id);
 
                 if (energyIndicators.TryGetValue(id, out var indicator) && indicator != null)
@@ -128,21 +130,19 @@ namespace Game.Client.Visuals
         private void RemoveStaleTowers(HashSet<ulong> seen)
         {
             var stale = new List<ulong>();
-            foreach (var kvp in registeredTowers)
+            foreach (var id in registeredTowers)
             {
-                if (!seen.Contains(kvp.Key))
-                    stale.Add(kvp.Key);
+                if (!seen.Contains(id))
+                    stale.Add(id);
             }
 
             for (var i = 0; i < stale.Count; i++)
             {
                 var id = stale[i];
-                if (registeredTowers.TryGetValue(id, out var tower))
-                {
-                    WorldOverlayManager.Instance?.UnregisterTower(tower);
-                    if (tower != null)
-                        gridManager?.UnregisterOccupiedCells(tower.GridPosition, tower.Size);
-                }
+                var tower = ClientObjectRegistry.Instance.Towers.TryGetValue(id, out var t) ? t : null;
+                WorldOverlayManager.Instance?.UnregisterTower(tower);
+                if (tower != null)
+                    gridManager?.UnregisterOccupiedCells(tower.GridPosition, tower.Size);
                 registeredTowers.Remove(id);
 
                 if (towerIndicators.TryGetValue(id, out var indicator) && indicator != null)

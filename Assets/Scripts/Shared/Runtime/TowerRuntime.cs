@@ -1,9 +1,9 @@
-using Game.Shared.Data;
+using Shared.Data;
 using System;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Game.Shared.Runtime
+namespace Shared.Runtime
 {
     public class TowerRuntime : NetworkBehaviour
     {
@@ -41,10 +41,13 @@ namespace Game.Shared.Runtime
                 ServerSpawned?.Invoke(this);
             }
 
+            Shared.GameEvents.RaiseTowerSpawned(this);
         }
 
         public override void OnDestroy()
         {
+            Shared.GameEvents.RaiseTowerDespawned(this);
+
             if (IsServer)
                 ServerDespawned?.Invoke(this);
 
@@ -58,7 +61,7 @@ namespace Game.Shared.Runtime
             gridPosition = gridPos;
         }
 
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        [Rpc(SendTo.Server)]
         public void TakeDamageServerRpc(float amount)
         {
             currentHealth.Value = Mathf.Max(0, currentHealth.Value - amount);

@@ -1,12 +1,12 @@
 using System;
-using Game.Shared.Determinism;
-using Game.Shared.Data;
-using Game.Shared.Runtime;
-using Game.Shared.Grid;
+using Shared.Determinism;
+using Shared.Data;
+using Shared.Runtime;
+using Shared.Grid;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Game.Server.Managers
+namespace Server.Managers
 {
     public class WorldGenerationManager : NetworkBehaviour
     {
@@ -27,6 +27,7 @@ namespace Game.Server.Managers
         [Header("References")]
         [SerializeField] private GridManager gridManager;
         [SerializeField] private WorldGenerationState worldGenerationState;
+        [SerializeField] private ServerSpawnManager serverSpawnManager;
 
         private int generatedSeed = -1;
         private bool statePublished;
@@ -75,15 +76,14 @@ namespace Game.Server.Managers
 
         private void SpawnEnergySources(int seed)
         {
-            var random = new System.Random(seed);
-            GridWaterGenerator.AdvanceRandom(random);
-
+            var random = new System.Random(seed + 1);
             var size = gridManager.GridSize;
             GridEnergySourceGenerator.Spawn(
                 random,
                 size,
                 energyNodeConfig,
                 gridManager,
+                serverSpawnManager,
                 nodeCount,
                 minDistanceBetweenNodes,
                 defaultMaxCapacity,

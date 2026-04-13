@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Game.Shared.Data
+namespace Shared.Data
 {
     [CreateAssetMenu(fileName = "WeaponType", menuName = "towergame/Weapon Type")]
     public class WeaponType : ScriptableObject

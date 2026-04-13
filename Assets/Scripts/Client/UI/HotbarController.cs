@@ -1,13 +1,13 @@
 using System.Collections.Generic;
-using Game.Client.Controllers;
-using Game.Shared.Data;
-using Game.Shared.Utilities;
+using Client.Controllers;
+using Shared.Data;
+using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
-namespace Game.Client.UI
+namespace Client.UI
 {
     public class HotbarController : MonoBehaviour
     {

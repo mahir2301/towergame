@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Game.Shared.Utilities
+namespace Shared.Utilities
 {
     public static class GameShaders
     {

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Game.Shared.Data
+namespace Shared.Data
 {
     [CreateAssetMenu(fileName = "EnergyType", menuName = "towergame/Energy Type")]
     public class EnergyType : ScriptableObject

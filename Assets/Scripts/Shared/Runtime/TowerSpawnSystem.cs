@@ -1,15 +1,15 @@
-using Game.Shared.Data;
-using Game.Shared.Grid;
+using System;
+using Shared.Data;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Game.Shared.Runtime
+namespace Shared.Runtime
 {
     public class TowerSpawnSystem : NetworkBehaviour
     {
         public static TowerSpawnSystem Instance { get; private set; }
 
-        [SerializeField] private GridManager gridManager;
+        public static event Action<TowerType, Vector2Int> OnServerPlaceRequested;
 
         private void Awake()
         {
@@ -24,10 +24,12 @@ namespace Game.Shared.Runtime
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestPlaceTowerServerRpc(string towerConfigId, Vector2Int gridPos)
         {
+            if (!IsServer) return;
+
             var config = GameRegistry.Instance?.GetTowerType(towerConfigId);
             if (config == null) return;
 
-            gridManager.TryPlaceTowerRuntime(gridPos, config, out _);
+            OnServerPlaceRequested?.Invoke(config, gridPos);
         }
     }
 }

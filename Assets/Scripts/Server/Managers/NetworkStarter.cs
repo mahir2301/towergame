@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Game.Server.Managers
+namespace Server.Managers
 {
     public class NetworkStarter : MonoBehaviour
     {

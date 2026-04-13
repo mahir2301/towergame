@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Game.Shared.Data
+namespace Shared.Data
 {
     [CreateAssetMenu(fileName = "ClassType", menuName = "towergame/Class Type")]
     public class ClassType : ScriptableObject

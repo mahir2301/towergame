@@ -1,36 +1,52 @@
 using System.Collections.Generic;
-using Game.Shared.Determinism;
-using Game.Shared.Grid;
-using Game.Shared.Runtime;
+using Shared.Determinism;
+using Shared.Grid;
+using Shared.Runtime;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Game.Client.Visuals
+namespace Client.Visuals
 {
     public class ClientWorldTerrainRenderer : MonoBehaviour
     {
         [SerializeField] private WorldGenerationState worldGenerationState;
-        [SerializeField] private GridManager gridManager;
         [SerializeField] private Material waterMaterial;
         [SerializeField] private GameObject waterParent;
 
         private const float WaterSurfaceY = 0.06f;
 
         private GameObject waterMeshObject;
-        private int appliedSeed = int.MinValue;
 
-        private void LateUpdate()
+        private void Start()
         {
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
                 return;
-            if (worldGenerationState == null || gridManager == null)
+
+            if (worldGenerationState == null)
                 return;
 
-            var seed = worldGenerationState.ReplicatedSeed;
-            if (seed < 0 || seed == appliedSeed)
+            worldGenerationState.Seed.OnValueChanged += OnSeedChanged;
+
+            if (worldGenerationState.ReplicatedSeed >= 0)
+                OnSeedChanged(-1, worldGenerationState.ReplicatedSeed);
+        }
+
+        private void OnDestroy()
+        {
+            if (worldGenerationState != null)
+                worldGenerationState.Seed.OnValueChanged -= OnSeedChanged;
+        }
+
+        private void OnSeedChanged(int previousValue, int newValue)
+        {
+            if (newValue < 0)
                 return;
 
-            var random = new System.Random(seed);
+            var gridManager = GridManager.Instance;
+            if (gridManager == null || worldGenerationState == null)
+                return;
+
+            var random = new System.Random(newValue);
             var waterCells = GridWaterGenerator.Generate(
                 gridManager.GridSize,
                 worldGenerationState.MinDistanceFromEdge,
@@ -40,11 +56,10 @@ namespace Game.Client.Visuals
                 random);
 
             gridManager.SetTerrainCells(waterCells);
-            RebuildWaterVisuals(waterCells);
-            appliedSeed = seed;
+            RebuildWaterVisuals(waterCells, gridManager);
         }
 
-        private void RebuildWaterVisuals(HashSet<Vector2Int> waterCells)
+        private void RebuildWaterVisuals(HashSet<Vector2Int> waterCells, GridManager gridManager)
         {
             if (waterMeshObject != null)
                 Destroy(waterMeshObject);
@@ -62,10 +77,10 @@ namespace Game.Client.Visuals
             var meshFilter = waterMeshObject.AddComponent<MeshFilter>();
             var meshRenderer = waterMeshObject.AddComponent<MeshRenderer>();
             meshRenderer.sharedMaterial = waterMaterial;
-            meshFilter.sharedMesh = BuildWaterMesh(waterCells);
+            meshFilter.sharedMesh = BuildWaterMesh(waterCells, gridManager);
         }
 
-        private static Mesh BuildWaterMesh(HashSet<Vector2Int> waterCells)
+        private static Mesh BuildWaterMesh(HashSet<Vector2Int> waterCells, GridManager gridManager)
         {
             var quadCount = waterCells.Count;
             var vertices = new Vector3[quadCount * 4];
@@ -78,8 +93,8 @@ namespace Game.Client.Visuals
                 var v = i * 4;
                 var t = i * 6;
 
-                var center = GridManager.Instance != null
-                    ? GridManager.Instance.GridToWorld(cell, WaterSurfaceY)
+                var center = gridManager != null
+                    ? gridManager.GridToWorld(cell, WaterSurfaceY)
                     : new Vector3(cell.x + 0.5f, WaterSurfaceY, cell.y + 0.5f);
 
                 vertices[v + 0] = new Vector3(center.x - 0.5f, WaterSurfaceY, center.z - 0.5f);

@@ -3,7 +3,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace Game.Client.Controllers
+namespace Client.Controllers
 {
     [RequireComponent(typeof(Rigidbody))]
     public class PlayerController : MonoBehaviour

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace Game.Shared.Data
+namespace Shared.Data
 {
     [CreateAssetMenu(fileName = "GameRegistry", menuName = "towergame/Game Registry")]
     public class GameRegistry : ScriptableObject

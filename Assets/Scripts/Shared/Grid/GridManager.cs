@@ -1,10 +1,7 @@
 using System.Collections.Generic;
-using Game.Shared.Data;
-using Game.Shared.Runtime;
-using Unity.Netcode;
 using UnityEngine;
 
-namespace Game.Shared.Grid
+namespace Shared.Grid
 {
     public enum GridTerrainType : byte
     {
@@ -142,64 +139,9 @@ namespace Game.Shared.Grid
             return true;
         }
 
-        public bool TryPlaceEnergyRuntime(Vector2Int gridPos, EnergyType config, int maxCapacity, out EnergyRuntime instance)
-        {
-            instance = null;
-            if (config?.Prefab == null)
-                return false;
-
-            var prefab = config.Prefab.GetComponent<EnergyRuntime>();
-            if (prefab == null)
-                return false;
-
-            if (!TryRegisterGridObject(GridObjectKind.EnergySource, gridPos, Vector2Int.one, false, config.Id, out var record))
-                return false;
-
-            instance = Instantiate(prefab, GridToWorld(gridPos), Quaternion.identity);
-            instance.Initialize(config, maxCapacity, gridPos);
-            BindRuntimeObject(record.Id, instance.gameObject);
-
-            var netObj = instance.GetComponent<NetworkObject>();
-            if (netObj != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-            {
-                netObj.Spawn();
-                BindRuntimeNetId(record.Id, netObj.NetworkObjectId);
-            }
-
-            return true;
-        }
-
-        public bool TryPlaceTowerRuntime(Vector2Int gridPos, TowerType config, out TowerRuntime instance)
-        {
-            instance = null;
-            if (config?.Prefab == null)
-                return false;
-
-            var prefab = config.Prefab.GetComponent<TowerRuntime>();
-            if (prefab == null)
-                return false;
-
-            if (!TryRegisterGridObject(GridObjectKind.Tower, gridPos, config.Size, config.CanBePlacedOnWater, config.Id,
-                    out var record))
-                return false;
-
-            instance = Instantiate(prefab, TowerWorldPos(gridPos, config), Quaternion.identity);
-            instance.Initialize(config, gridPos);
-            BindRuntimeObject(record.Id, instance.gameObject);
-
-            var netObj = instance.GetComponent<NetworkObject>();
-            if (netObj != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-            {
-                netObj.Spawn();
-                BindRuntimeNetId(record.Id, netObj.NetworkObjectId);
-            }
-
-            return true;
-        }
-
         public void RegisterOccupiedCells(Vector2Int gridPos, Vector2Int size, GameObject obj)
         {
-            TryRegisterGridObject(GridObjectKind.Unknown, gridPos, size, true, string.Empty, out _);
+            TryRegisterOccupancy(GridObjectKind.Unknown, gridPos, size, true, string.Empty, out _);
         }
 
         public void UnregisterOccupiedCells(Vector2Int gridPos, Vector2Int size)
@@ -213,17 +155,7 @@ namespace Game.Shared.Grid
             }
         }
 
-        public static Vector3 TowerWorldPos(Vector2Int gridPos, TowerType config)
-        {
-            if (Instance == null)
-                return Vector3.zero;
-
-            var size = config != null ? config.Size : Vector2Int.one;
-            var offset = config != null ? config.PlacementOffset : Vector3.zero;
-            return Instance.GridToWorld(gridPos, size, 0f) + offset;
-        }
-
-        private bool TryRegisterGridObject(GridObjectKind kind, Vector2Int gridPos, Vector2Int size, bool allowWater,
+        public bool TryRegisterOccupancy(GridObjectKind kind, Vector2Int gridPos, Vector2Int size, bool allowWater,
             string configId, out GridObjectRecord record)
         {
             record = null;
@@ -253,16 +185,26 @@ namespace Game.Shared.Grid
             return true;
         }
 
-        private void BindRuntimeObject(int objectId, GameObject obj)
+        public void BindRuntimeObject(int objectId, GameObject obj)
         {
             if (gridObjects.TryGetValue(objectId, out var record))
                 record.RuntimeObject = obj;
         }
 
-        private void BindRuntimeNetId(int objectId, ulong netId)
+        public void BindRuntimeNetId(int objectId, ulong netId)
         {
             if (gridObjects.TryGetValue(objectId, out var record))
                 record.RuntimeNetId = netId;
+        }
+
+        public static Vector3 TowerWorldPos(Vector2Int gridPos, Shared.Data.TowerType config)
+        {
+            if (Instance == null)
+                return Vector3.zero;
+
+            var size = config != null ? config.Size : Vector2Int.one;
+            var offset = config != null ? config.PlacementOffset : Vector3.zero;
+            return Instance.GridToWorld(gridPos, size, 0f) + offset;
         }
 
         private void EnsureTerrainMap()

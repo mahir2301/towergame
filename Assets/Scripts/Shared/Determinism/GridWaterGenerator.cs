@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Game.Shared.Determinism
+namespace Shared.Determinism
 {
-    internal static class GridWaterGenerator
+    public static class GridWaterGenerator
     {
         public static void AdvanceRandom(System.Random random)
         {

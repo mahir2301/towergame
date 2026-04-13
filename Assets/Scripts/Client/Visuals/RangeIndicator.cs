@@ -1,7 +1,7 @@
 using UnityEngine;
-using Game.Shared.Utilities;
+using Shared.Utilities;
 
-namespace Game.Client.Visuals
+namespace Client.Visuals
 {
     public class RangeIndicator : MonoBehaviour
     {

@@ -1,10 +1,9 @@
-using Game.Shared.Data;
-using Game.Shared.Grid;
+using Shared.Data;
 using System;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Game.Shared.Runtime
+namespace Shared.Runtime
 {
     public class EnergyRuntime : NetworkBehaviour
     {
@@ -34,15 +33,17 @@ namespace Game.Shared.Runtime
                 ServerSpawned?.Invoke(this);
             }
 
+            Shared.GameEvents.RaiseEnergySpawned(this);
         }
 
         public override void OnNetworkDespawn()
         {
-            base.OnNetworkDespawn();
+            Shared.GameEvents.RaiseEnergyDespawned(this);
 
             if (IsServer)
                 ServerDespawned?.Invoke(this);
 
+            base.OnNetworkDespawn();
         }
 
         public void Initialize(EnergyType energyConfig, int capacity, Vector2Int gridPos)

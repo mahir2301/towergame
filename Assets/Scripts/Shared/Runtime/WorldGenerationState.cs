@@ -1,6 +1,6 @@
 using Unity.Netcode;
 
-namespace Game.Shared.Runtime
+namespace Shared.Runtime
 {
     public class WorldGenerationState : NetworkBehaviour
     {
@@ -25,6 +25,7 @@ namespace Game.Shared.Runtime
             NetworkVariableWritePermission.Server);
 
         public int ReplicatedSeed => replicatedSeed.Value;
+        public NetworkVariable<int> Seed => replicatedSeed;
         public int MinDistanceFromEdge => minDistanceFromEdge.Value;
         public float WaterThreshold => waterThreshold.Value;
         public float WaterNoiseScale => waterNoiseScale.Value;

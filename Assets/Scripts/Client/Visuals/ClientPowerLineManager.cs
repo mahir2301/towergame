@@ -1,58 +1,39 @@
 using System.Collections.Generic;
-using Game.Shared.Runtime;
+using Shared.Runtime;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Game.Client.Visuals
+namespace Client.Visuals
 {
     public class ClientPowerLineManager : MonoBehaviour
     {
         private readonly Dictionary<ulong, PowerLineVisual> linesByTower = new();
-        private readonly Dictionary<ulong, TowerRuntime> towersById = new();
-        private readonly Dictionary<ulong, EnergyRuntime> energyById = new();
 
         private void LateUpdate()
         {
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
                 return;
 
-            RebuildLookup();
             RefreshLines();
-        }
-
-        private void RebuildLookup()
-        {
-            towersById.Clear();
-            energyById.Clear();
-
-            var towers = FindObjectsByType<TowerRuntime>(FindObjectsSortMode.None);
-            for (var i = 0; i < towers.Length; i++)
-            {
-                var tower = towers[i];
-                if (tower != null && tower.IsSpawned)
-                    towersById[tower.NetworkObjectId] = tower;
-            }
-
-            var energyNodes = FindObjectsByType<EnergyRuntime>(FindObjectsSortMode.None);
-            for (var i = 0; i < energyNodes.Length; i++)
-            {
-                var energy = energyNodes[i];
-                if (energy != null && energy.IsSpawned)
-                    energyById[energy.NetworkObjectId] = energy;
-            }
         }
 
         private void RefreshLines()
         {
+            if (ClientObjectRegistry.Instance == null)
+                return;
+
+            var towers = ClientObjectRegistry.Instance.Towers;
+            var energyNodes = ClientObjectRegistry.Instance.EnergyNodes;
+
             var activeTowers = new HashSet<ulong>();
 
-            foreach (var kvp in towersById)
+            foreach (var kvp in towers)
             {
                 var tower = kvp.Value;
-                if (tower == null || !tower.IsPowered || tower.ConnectedEnergyId == ulong.MaxValue)
+                if (tower == null || !tower.IsSpawned || !tower.IsPowered || tower.ConnectedEnergyId == ulong.MaxValue)
                     continue;
 
-                if (!TryResolveSource(tower, out var source))
+                if (!TryResolveSource(tower, energyNodes, towers, out var source))
                     continue;
 
                 activeTowers.Add(tower.NetworkObjectId);
@@ -79,16 +60,19 @@ namespace Game.Client.Visuals
             }
         }
 
-        private bool TryResolveSource(TowerRuntime tower, out Transform source)
+        private static bool TryResolveSource(TowerRuntime tower,
+            IReadOnlyDictionary<ulong, EnergyRuntime> energyNodes,
+            IReadOnlyDictionary<ulong, TowerRuntime> towers,
+            out Transform source)
         {
             source = null;
-            if (tower.ConnectedViaAntennaId != ulong.MaxValue && towersById.TryGetValue(tower.ConnectedViaAntennaId, out var antenna))
+            if (tower.ConnectedViaAntennaId != ulong.MaxValue && towers.TryGetValue(tower.ConnectedViaAntennaId, out var antenna))
             {
                 source = antenna.transform;
                 return true;
             }
 
-            if (energyById.TryGetValue(tower.ConnectedEnergyId, out var energy))
+            if (energyNodes.TryGetValue(tower.ConnectedEnergyId, out var energy))
             {
                 source = energy.transform;
                 return true;
