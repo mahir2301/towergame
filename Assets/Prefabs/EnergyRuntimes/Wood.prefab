@@ -152,7 +152,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 160c81070f4eb0d4a96c015dbfe495cd, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Runtime.EnergyRuntime
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Runtime.EnergyRuntime
   ShowTopMostFoldoutHeaderGroup: 1
   configId: wood
   config: {fileID: 11400000, guid: b52d8142ae17cf44fa8dcfdb0967e115, type: 2}

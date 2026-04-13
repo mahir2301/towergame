@@ -158,7 +158,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e13cc6fdd4c84813b980dc69fd5fa6f2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Runtime.TowerRuntime
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Runtime.TowerRuntime
   ShowTopMostFoldoutHeaderGroup: 1
   config: {fileID: 11400000, guid: 3bab7a44e7a0fbc419671d3f1496e918, type: 2}
   gridPosition: {x: 0, y: 0}

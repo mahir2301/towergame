@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f5eb824308ba4b2a9b9f1d993af420f9, type: 3}
   m_Name: Turret
-  m_EditorClassIdentifier: Assembly-CSharp::Data.TowerType
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Data.TowerType
   id: turret
   displayName: Turret
   classType: {fileID: 11400000, guid: 406d1cdfea4bfdf48b58869e79983afc, type: 2}

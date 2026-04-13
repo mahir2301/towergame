@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f5eb824308ba4b2a9b9f1d993af420f9, type: 3}
   m_Name: Castle
-  m_EditorClassIdentifier: Assembly-CSharp::Data.TowerType
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Data.TowerType
   id: castle
   displayName: Castle
   classType: {fileID: 11400000, guid: 54de1a5c92312f840a6c90a4d37d3b8e, type: 2}

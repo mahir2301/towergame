@@ -182,7 +182,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 160c81070f4eb0d4a96c015dbfe495cd, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Runtime.EnergyRuntime
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Runtime.EnergyRuntime
   ShowTopMostFoldoutHeaderGroup: 1
   configId: crystal
   config: {fileID: 11400000, guid: cbb71f6aa217ca747a6cbf183665092b, type: 2}

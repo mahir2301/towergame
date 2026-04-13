@@ -411,6 +411,10 @@ GameObject:
   - component: {fileID: 500300001}
   - component: {fileID: 500300005}
   - component: {fileID: 500300006}
+  - component: {fileID: 500300007}
+  - component: {fileID: 500300008}
+  - component: {fileID: 500300009}
+  - component: {fileID: 500300010}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -454,7 +458,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e1a07e5c0afb55d4c92b4e0310ffdee5, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Managers.EnergyNetworkManager
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Server.Managers.EnergyNetworkManager
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &500300003
 MonoBehaviour:
@@ -467,7 +471,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aa2db2d26ff07d040a072dab12eab8f6, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Managers.GridManager
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Grid.GridManager
   gridSize: {x: 320, y: 320}
 --- !u!4 &500300004
 Transform:
@@ -495,7 +499,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 925dd5378bd5fe84ca6d76ffff4245ea, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Managers.WorldGenerationManager
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Server.Managers.WorldGenerationManager
   ShowTopMostFoldoutHeaderGroup: 1
   minDistanceFromEdge: 3
   waterThreshold: 0.62
@@ -510,8 +514,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: cbb71f6aa217ca747a6cbf183665092b, type: 2}
   - {fileID: 11400000, guid: b52d8142ae17cf44fa8dcfdb0967e115, type: 2}
   gridManager: {fileID: 500300003}
-  waterMaterial: {fileID: 2100000, guid: 370476ce8b0471e45937cf2f751f67ba, type: 2}
-  waterParent: {fileID: 0}
+  worldGenerationState: {fileID: 500300010}
 --- !u!114 &500300006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -523,9 +526,62 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4c47da33d57e4ee4088f28d22865a6d0, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Managers.TowerSpawnSystem
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Runtime.TowerSpawnSystem
   ShowTopMostFoldoutHeaderGroup: 1
   gridManager: {fileID: 500300003}
+--- !u!114 &500300007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 500299999}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86589e761281c43ae925be5958471769, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Client.Visuals.ClientPowerLineManager
+--- !u!114 &500300008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 500299999}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b8a0f29a8484ec3a11618180e8d2f91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Client.Visuals.ClientWorldTerrainRenderer
+  worldGenerationState: {fileID: 500300010}
+  gridManager: {fileID: 500300003}
+  waterMaterial: {fileID: 2100000, guid: 370476ce8b0471e45937cf2f751f67ba, type: 2}
+  waterParent: {fileID: 1160422660}
+--- !u!114 &500300009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 500299999}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ca98a5739cb44879a36a35327b4d5fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Client.Visuals.ClientRuntimePresentationManager
+  gridManager: {fileID: 500300003}
+--- !u!114 &500300010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 500299999}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8846933e8014f4e8b53c31eb50fcdd3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Runtime.WorldGenerationState
 --- !u!1 &526166268 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3452855052894926423, guid: 0bc62a4181badfc4e9168bfe74ea2dc0, type: 3}
@@ -547,7 +603,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: afec1a4c84df4006950e34a9cdf29ff7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Controllers.TowerPlacementController
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Client.Controllers.TowerPlacementController
   gridManager: {fileID: 500300003}
   towerSpawnSystem: {fileID: 500300006}
   mainCamera: {fileID: 1745330854}
@@ -565,7 +621,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c0cb2f4d4bc481b42aeed4c7263ab8a0, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Controllers.PlayerController
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Client.Controllers.PlayerController
   mainCamera: {fileID: 267404663}
   movementSpeed: 10
   movementAcceleration: 20
@@ -638,7 +694,7 @@ MonoBehaviour:
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 526166272}
-        m_TargetAssemblyTypeName: Controllers.PlayerController, Assembly-CSharp
+        m_TargetAssemblyTypeName: Game.Client.Controllers.PlayerController, Assembly-CSharp
         m_MethodName: OnMove
         m_Mode: 0
         m_Arguments:
@@ -654,7 +710,7 @@ MonoBehaviour:
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 526166271}
-        m_TargetAssemblyTypeName: Controllers.TowerPlacementController, Assembly-CSharp
+        m_TargetAssemblyTypeName: Game.Client.Controllers.TowerPlacementController, Assembly-CSharp
         m_MethodName: OnPlaceTower
         m_Mode: 0
         m_Arguments:
@@ -670,7 +726,7 @@ MonoBehaviour:
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 526166272}
-        m_TargetAssemblyTypeName: Controllers.PlayerController, Assembly-CSharp
+        m_TargetAssemblyTypeName: Game.Client.Controllers.PlayerController, Assembly-CSharp
         m_MethodName: OnJump
         m_Mode: 0
         m_Arguments:
@@ -914,7 +970,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7628d92cfc4560248bd2918d2ae1b0f3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI.HotbarController
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Client.UI.HotbarController
   uiDocument: {fileID: 1035705160}
   placementController: {fileID: 526166271}
   slotTemplate: {fileID: 9197481963319205126, guid: d452bde989e0d423b91ee61027a145ff, type: 3}
@@ -1082,7 +1138,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bde33cc650e3d524fb9932fbc4cee514, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Visuals.GridVisuals
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Client.Visuals.GridVisuals
   baseColor: {r: 0.18039216, g: 0.49019608, b: 0.19607843, a: 1}
   gridColor: {r: 0.03, g: 0.13, b: 0.03, a: 0.6}
   gridThickness: 0.03
@@ -1115,7 +1171,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e28ba2c979e71984cb309fef79cf2766, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI.WorldOverlayManager
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Client.UI.WorldOverlayManager
   uiDocument: {fileID: 1578773766}
   overlayStyleSheet: {fileID: 7433441132597879392, guid: d702cf02abdf74540bc6d499cf8a6aba, type: 3}
   energyTemplate: {fileID: 9197481963319205126, guid: 0e2072ce61c4f45db81bc6515b06884f, type: 3}

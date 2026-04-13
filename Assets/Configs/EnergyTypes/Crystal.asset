@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40f80c3e097541e29f899623f7af2888, type: 3}
   m_Name: Crystal
-  m_EditorClassIdentifier: Assembly-CSharp::Data.EnergyType
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Data.EnergyType
   id: crystal
   displayName: Crystal
   prefab: {fileID: 3263715069909696678, guid: d017b555b5a4aa44d843aee5e17b3904, type: 3}

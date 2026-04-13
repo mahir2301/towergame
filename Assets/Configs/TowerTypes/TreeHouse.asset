@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f5eb824308ba4b2a9b9f1d993af420f9, type: 3}
   m_Name: TreeHouse
-  m_EditorClassIdentifier: Assembly-CSharp::Data.TowerType
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Data.TowerType
   id: tree_house
   displayName: Tree House
   classType: {fileID: 11400000, guid: 4db51c9f4fcc09d419954139b998794f, type: 2}

@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40f80c3e097541e29f899623f7af2888, type: 3}
   m_Name: Wood
-  m_EditorClassIdentifier: Assembly-CSharp::Data.EnergyType
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Data.EnergyType
   id: wood
   displayName: Wood
   prefab: {fileID: 6870331177201499599, guid: 2b33dc1d20de1e448b0a3d8f70b9c736, type: 3}
