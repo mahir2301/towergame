@@ -21,6 +21,14 @@ namespace Shared.Runtime
             Instance = this;
         }
 
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            if (Instance == this)
+                Instance = null;
+        }
+
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestPlaceTowerServerRpc(string towerConfigId, Vector2Int gridPos)
         {

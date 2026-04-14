@@ -251,7 +251,8 @@ namespace Server.Managers
         private bool TryGetTower(ulong towerId, out TowerRuntime tower)
         {
             tower = null;
-            return NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(towerId, out var obj)
+            return NetworkManager.Singleton != null
+                   && NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(towerId, out var obj)
                    && (tower = obj.GetComponent<TowerRuntime>()) != null;
         }
     }

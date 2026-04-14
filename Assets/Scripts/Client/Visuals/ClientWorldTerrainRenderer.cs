@@ -11,7 +11,6 @@ namespace Client.Visuals
     {
         [SerializeField] private WorldGenerationState worldGenerationState;
         [SerializeField] private Material waterMaterial;
-        [SerializeField] private GameObject waterParent;
 
         private const float WaterSurfaceY = 0.06f;
 
@@ -19,10 +18,7 @@ namespace Client.Visuals
 
         private void Start()
         {
-            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
-                return;
-
-            if (worldGenerationState == null)
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
                 return;
 
             worldGenerationState.Seed.OnValueChanged += OnSeedChanged;
@@ -33,8 +29,7 @@ namespace Client.Visuals
 
         private void OnDestroy()
         {
-            if (worldGenerationState != null)
-                worldGenerationState.Seed.OnValueChanged -= OnSeedChanged;
+            worldGenerationState.Seed.OnValueChanged -= OnSeedChanged;
         }
 
         private void OnSeedChanged(int previousValue, int newValue)
@@ -43,23 +38,19 @@ namespace Client.Visuals
                 return;
 
             var gridManager = GridManager.Instance;
-            if (gridManager == null || worldGenerationState == null)
-                return;
-
-            var random = new System.Random(newValue);
             var waterCells = GridWaterGenerator.Generate(
                 gridManager.GridSize,
                 worldGenerationState.MinDistanceFromEdge,
                 worldGenerationState.WaterNoiseScale,
                 worldGenerationState.WaterThreshold,
                 worldGenerationState.WaterSmoothPasses,
-                random);
+                new System.Random(newValue));
 
             gridManager.SetTerrainCells(waterCells);
-            RebuildWaterVisuals(waterCells, gridManager);
+            RebuildWaterVisuals(waterCells);
         }
 
-        private void RebuildWaterVisuals(HashSet<Vector2Int> waterCells, GridManager gridManager)
+        private void RebuildWaterVisuals(HashSet<Vector2Int> waterCells)
         {
             if (waterMeshObject != null)
                 Destroy(waterMeshObject);
@@ -68,19 +59,18 @@ namespace Client.Visuals
                 return;
 
             waterMeshObject = new GameObject("WaterMesh");
-            waterMeshObject.transform.position = Vector3.zero;
-            waterMeshObject.transform.rotation = Quaternion.identity;
-            waterMeshObject.transform.localScale = Vector3.one;
-            if (waterParent != null)
-                waterMeshObject.transform.SetParent(waterParent.transform, true);
 
             var meshFilter = waterMeshObject.AddComponent<MeshFilter>();
             var meshRenderer = waterMeshObject.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterial = waterMaterial;
-            meshFilter.sharedMesh = BuildWaterMesh(waterCells, gridManager);
+
+            var waterMat = new Material(waterMaterial);
+            waterMat.renderQueue = 2001;
+            meshRenderer.sharedMaterial = waterMat;
+
+            meshFilter.sharedMesh = BuildWaterMesh(waterCells);
         }
 
-        private static Mesh BuildWaterMesh(HashSet<Vector2Int> waterCells, GridManager gridManager)
+        private static Mesh BuildWaterMesh(HashSet<Vector2Int> waterCells)
         {
             var quadCount = waterCells.Count;
             var vertices = new Vector3[quadCount * 4];
@@ -93,14 +83,10 @@ namespace Client.Visuals
                 var v = i * 4;
                 var t = i * 6;
 
-                var center = gridManager != null
-                    ? gridManager.GridToWorld(cell, WaterSurfaceY)
-                    : new Vector3(cell.x + 0.5f, WaterSurfaceY, cell.y + 0.5f);
-
-                vertices[v + 0] = new Vector3(center.x - 0.5f, WaterSurfaceY, center.z - 0.5f);
-                vertices[v + 1] = new Vector3(center.x + 0.5f, WaterSurfaceY, center.z - 0.5f);
-                vertices[v + 2] = new Vector3(center.x + 0.5f, WaterSurfaceY, center.z + 0.5f);
-                vertices[v + 3] = new Vector3(center.x - 0.5f, WaterSurfaceY, center.z + 0.5f);
+                vertices[v + 0] = new Vector3(cell.x, WaterSurfaceY, cell.y);
+                vertices[v + 1] = new Vector3(cell.x + 1, WaterSurfaceY, cell.y);
+                vertices[v + 2] = new Vector3(cell.x + 1, WaterSurfaceY, cell.y + 1);
+                vertices[v + 3] = new Vector3(cell.x, WaterSurfaceY, cell.y + 1);
 
                 uvs[v + 0] = new Vector2(0, 0);
                 uvs[v + 1] = new Vector2(1, 0);

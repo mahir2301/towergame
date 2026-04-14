@@ -2,9 +2,10 @@
     position: absolute;
     bottom: 16px;
     left: 50%;
-    transform: translateX(-50%);
+    translate: -50% 0;
     flex-direction: row;
     justify-content: center;
+    align-items: flex-end;
     padding: 8px;
     background-color: rgba(0, 0, 0, 0.6);
     border-radius: 8px;
@@ -52,12 +53,49 @@
     font-size: 12px;
     color: rgba(220, 220, 220, 1);
     -unity-font-style: bold;
-    text-align: center;
+    -unity-text-align: center;
     white-space: nowrap;
 }
 
 .slot-key {
     font-size: 11px;
     color: rgba(160, 160, 160, 1);
-    text-align: center;
+    -unity-text-align: center;
+}
+
+.phase-buttons {
+    flex-direction: column;
+    justify-content: center;
+    margin-left: 8px;
+}
+
+.phase-button {
+    width: 80px;
+    height: 32px;
+    margin: 2px;
+    border-radius: 4px;
+    border-width: 1px;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    -unity-font-style: bold;
+    color: rgba(220, 220, 220, 1);
+}
+
+.phase-button.build {
+    background-color: rgba(0.2, 0.5, 0.8, 0.8);
+    border-color: rgba(0.3, 0.7, 1.0, 0.8);
+}
+
+.phase-button.build:hover {
+    background-color: rgba(0.3, 0.6, 0.9, 0.9);
+}
+
+.phase-button.combat {
+    background-color: rgba(0.8, 0.2, 0.2, 0.8);
+    border-color: rgba(1.0, 0.3, 0.3, 0.8);
+}
+
+.phase-button.combat:hover {
+    background-color: rgba(0.9, 0.3, 0.3, 0.9);
 }

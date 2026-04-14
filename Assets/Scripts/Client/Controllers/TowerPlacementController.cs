@@ -1,4 +1,5 @@
 using Client.Visuals;
+using Shared;
 using Shared.Data;
 using Shared.Grid;
 using Shared.Runtime;
@@ -34,7 +35,7 @@ namespace Client.Controllers
 
         private void Update()
         {
-            if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsClient)
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
                 return;
 
             UpdateGhostState();
@@ -57,6 +58,13 @@ namespace Client.Controllers
         {
             if (ghostInstance == null) return;
 
+            if (PhaseManager.Instance.CurrentPhase != GamePhase.Building)
+            {
+                ghostInstance.SetActive(false);
+                currentGridPos = null;
+                return;
+            }
+
             if (IsPointerOverAnyUI())
             {
                 ghostInstance.SetActive(false);
@@ -73,10 +81,7 @@ namespace Client.Controllers
                 return;
             }
 
-            var isValidPlacement = gridManager.IsCellAvailable(
-                currentGridPos.Value, currentTowerConfig.Size, currentTowerConfig.CanBePlacedOnWater);
-
-            if (!isValidPlacement)
+            if (!gridManager.IsCellAvailable(currentGridPos.Value, currentTowerConfig.Size, currentTowerConfig.CanBePlacedOnWater))
             {
                 ghostInstance.SetActive(false);
                 return;
@@ -93,14 +98,12 @@ namespace Client.Controllers
             if (currentTowerConfig == null || currentGridPos == null)
                 return;
 
-            var classType = currentTowerConfig.ClassType;
-            var energyCost = currentTowerConfig.Stats.energyCost;
-            var gridPos = currentGridPos.Value;
+            var isInRange = IsInEnergyRangeFromRegistry(
+                currentGridPos.Value,
+                currentTowerConfig.ClassType,
+                currentTowerConfig.Stats.energyCost);
 
-            var isInRange = IsInEnergyRangeFromRegistry(gridPos, classType, energyCost);
-
-            var tintColor = isInRange ? canConnectColor : cannotConnectColor;
-            ghostPropertyBlock.SetColor(BaseColorProperty, tintColor);
+            ghostPropertyBlock.SetColor(BaseColorProperty, isInRange ? canConnectColor : cannotConnectColor);
 
             foreach (var renderer in ghostRenderers)
                 renderer.SetPropertyBlock(ghostPropertyBlock);
@@ -118,13 +121,15 @@ namespace Client.Controllers
             if (!groundPlane.Raycast(ray, out var distance))
                 return null;
 
-            var worldPos = ray.GetPoint(distance);
-            return gridManager.WorldToGrid(worldPos);
+            return gridManager.WorldToGrid(ray.GetPoint(distance));
         }
 
         public void OnPlaceTower(InputAction.CallbackContext context)
         {
-            if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsClient)
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
+                return;
+
+            if (PhaseManager.Instance.CurrentPhase != GamePhase.Building)
                 return;
 
             if (!context.performed || currentGridPos is null || currentTowerConfig == null)
@@ -133,8 +138,7 @@ namespace Client.Controllers
             if (IsPointerOverAnyUI())
                 return;
 
-            if (!gridManager.IsCellAvailable(
-                    currentGridPos.Value, currentTowerConfig.Size, currentTowerConfig.CanBePlacedOnWater))
+            if (!gridManager.IsCellAvailable(currentGridPos.Value, currentTowerConfig.Size, currentTowerConfig.CanBePlacedOnWater))
                 return;
 
             towerSpawnSystem.RequestPlaceTowerServerRpc(currentTowerConfig.Id, currentGridPos.Value);
@@ -174,10 +178,8 @@ namespace Client.Controllers
             foreach (var kvp in energies)
             {
                 var energy = kvp.Value;
-                if (energy == null || !energy.IsSpawned)
-                    continue;
-                if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost))
-                    continue;
+                if (energy == null || !energy.IsSpawned) continue;
+                if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost)) continue;
                 if (Vector2Int.Distance(pos, energy.GridPosition) <= energy.EnergyRange)
                     return true;
             }
@@ -186,18 +188,14 @@ namespace Client.Controllers
             foreach (var kvp in towers)
             {
                 var antenna = kvp.Value;
-                if (antenna == null || !antenna.IsSpawned || !antenna.IsPowered)
-                    continue;
-                if (antenna.Config == null || !antenna.Config.IsAntenna)
-                    continue;
+                if (antenna == null || !antenna.IsSpawned || !antenna.IsPowered) continue;
+                if (antenna.Config == null || !antenna.Config.IsAntenna) continue;
 
                 var range = antenna.Config.Stats.antennaRange;
-                if (Vector2Int.Distance(pos, antenna.GridPosition) > range)
-                    continue;
+                if (Vector2Int.Distance(pos, antenna.GridPosition) > range) continue;
 
                 var sourceEnergyId = antenna.ConnectedEnergyId;
-                if (sourceEnergyId == ulong.MaxValue)
-                    continue;
+                if (sourceEnergyId == ulong.MaxValue) continue;
 
                 if (energies.TryGetValue(sourceEnergyId, out var energy) && energy != null
                     && energy.IsSpawned
