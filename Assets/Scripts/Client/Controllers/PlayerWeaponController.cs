@@ -1,5 +1,4 @@
 using Shared;
-using Shared.Data;
 using Shared.Runtime;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -28,10 +27,6 @@ namespace Client.Controllers
             PlayerRuntime.LocalPlayerSpawned -= OnLocalPlayerSpawned;
             PlayerRuntime.LocalPlayerDespawned -= OnLocalPlayerDespawned;
             GameEvents.WeaponFired -= OnWeaponFired;
-        }
-
-        private void Update()
-        {
         }
 
         private void OnLocalPlayerSpawned(PlayerRuntime player)

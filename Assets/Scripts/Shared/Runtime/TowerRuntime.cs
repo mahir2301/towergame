@@ -13,13 +13,12 @@ namespace Shared.Runtime
         [Header("Configuration")]
         [SerializeField] private TowerType config;
 
-        [Header("Runtime State")]
-        [SerializeField] private Vector2Int gridPosition;
-
-        private NetworkVariable<float> currentHealth = new();
-        private NetworkVariable<bool> isPowered = new();
+        private readonly NetworkVariable<float> currentHealth = new();
+        private readonly NetworkVariable<bool> isPowered = new();
         private readonly NetworkVariable<ulong> connectedEnergyId = new(ulong.MaxValue);
         private readonly NetworkVariable<ulong> connectedViaAntennaId = new(ulong.MaxValue);
+
+        private Vector2Int gridPosition;
 
         public TowerType Config => config;
         public Vector2Int GridPosition { get => gridPosition; set => gridPosition = value; }
@@ -41,18 +40,17 @@ namespace Shared.Runtime
                 ServerSpawned?.Invoke(this);
             }
 
-            Shared.GameEvents.RaiseTowerSpawned(this);
+            GameEvents.RaiseTowerSpawned(this);
         }
 
-        public override void OnDestroy()
+        public override void OnNetworkDespawn()
         {
-            Shared.GameEvents.RaiseTowerDespawned(this);
+            GameEvents.RaiseTowerDespawned(this);
 
             if (IsServer)
                 ServerDespawned?.Invoke(this);
 
-            base.OnDestroy();
-
+            base.OnNetworkDespawn();
         }
 
         public void Initialize(TowerType towerConfig, Vector2Int gridPos)
@@ -61,17 +59,18 @@ namespace Shared.Runtime
             gridPosition = gridPos;
         }
 
-        [Rpc(SendTo.Server)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void TakeDamageServerRpc(float amount)
         {
+            if (!IsServer) return;
             currentHealth.Value = Mathf.Max(0, currentHealth.Value - amount);
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RepairServerRpc(float amount)
         {
-            if (config != null)
-                currentHealth.Value = Mathf.Min(config.Stats.maxHealth, currentHealth.Value + amount);
+            if (!IsServer || config == null) return;
+            currentHealth.Value = Mathf.Min(config.Stats.maxHealth, currentHealth.Value + amount);
         }
 
         public void SetPowered(bool powered)
@@ -82,8 +81,7 @@ namespace Shared.Runtime
 
         public void SetConnection(ulong energyId, ulong antennaId)
         {
-            if (!IsServer)
-                return;
+            if (!IsServer) return;
 
             connectedEnergyId.Value = energyId;
             connectedViaAntennaId.Value = antennaId;
@@ -92,13 +90,11 @@ namespace Shared.Runtime
 
         public void ClearConnection()
         {
-            if (!IsServer)
-                return;
+            if (!IsServer) return;
 
             connectedEnergyId.Value = ulong.MaxValue;
             connectedViaAntennaId.Value = ulong.MaxValue;
             SetPowered(false);
         }
-
     }
 }

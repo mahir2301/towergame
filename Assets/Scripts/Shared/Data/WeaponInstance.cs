@@ -32,15 +32,21 @@ namespace Shared.Data
         {
             var config = GetConfig();
             if (config != null && config.Stats.fireRate > 0)
+            {
                 currentCooldown = 1f / config.Stats.fireRate;
+            }
             else
+            {
                 currentCooldown = 0.5f;
+            }
         }
 
         public void TickCooldown(float deltaTime)
         {
             if (currentCooldown > 0f)
+            {
                 currentCooldown = Mathf.Max(0f, currentCooldown - deltaTime);
+            }
         }
     }
 }

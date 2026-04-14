@@ -867,7 +867,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Shared::Shared.Runtime.PlayerRuntime
   ShowTopMostFoldoutHeaderGroup: 1
-  projectilePrefab: {fileID: 308472968295596844, guid: 86b8b9d672c3b99408ba3246746ea42c, type: 3}
 --- !u!114 &526166279
 MonoBehaviour:
   m_ObjectHideFlags: 0

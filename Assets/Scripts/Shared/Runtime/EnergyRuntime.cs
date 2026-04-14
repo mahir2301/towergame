@@ -12,10 +12,11 @@ namespace Shared.Runtime
 
         [Header("Configuration")]
         [SerializeField] private EnergyType config;
-        [SerializeField] private Vector2Int gridPosition;
         [SerializeField] private int maxCapacity;
 
         private readonly NetworkVariable<int> currentCapacity = new();
+
+        private Vector2Int gridPosition;
 
         public EnergyType Config => config;
         public Vector2Int GridPosition { get => gridPosition; set => gridPosition = value; }
@@ -33,12 +34,12 @@ namespace Shared.Runtime
                 ServerSpawned?.Invoke(this);
             }
 
-            Shared.GameEvents.RaiseEnergySpawned(this);
+            GameEvents.RaiseEnergySpawned(this);
         }
 
         public override void OnNetworkDespawn()
         {
-            Shared.GameEvents.RaiseEnergyDespawned(this);
+            GameEvents.RaiseEnergyDespawned(this);
 
             if (IsServer)
                 ServerDespawned?.Invoke(this);
@@ -77,6 +78,5 @@ namespace Shared.Runtime
         {
             return classType != null && config != null && classType.CanConnectTo(config);
         }
-
     }
 }

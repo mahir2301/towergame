@@ -15,8 +15,10 @@ MonoBehaviour:
   id: fist
   displayName: Fist
   classType: {fileID: 11400000, guid: 406d1cdfea4bfdf48b58869e79983afc, type: 2}
+  projectilePrefab: {fileID: 308472968295596844, guid: 86b8b9d672c3b99408ba3246746ea42c, type: 3}
   stats:
     damage: 0
     range: 14.45
     fireRate: 0.5
+    projectileSpeed: 0
     energyCostPerShot: 0

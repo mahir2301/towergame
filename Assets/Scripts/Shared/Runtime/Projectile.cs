@@ -8,68 +8,74 @@ namespace Shared.Runtime
     [RequireComponent(typeof(NetworkObject))]
     public class Projectile : NetworkBehaviour
     {
-        private float speed = 30f;
-        private float lifetime = 3f;
-        private float damage = 10f;
+        private const float DEFAULT_SPEED = 30f;
+        private const float MAX_DISTANCE = 100f;
+
         private Vector3 direction;
+        private float speed;
+        private float damage;
         private float traveledDistance;
-        private float maxDistance = 100f;
+        private float spawnTime;
+
+        public Vector3 Direction => direction;
+        public float Speed => speed;
+        public float Damage => damage;
 
         public void Initialize(Vector3 targetPosition, float projectileSpeed, float projectileDamage)
         {
             var startPos = transform.position;
             var endPos = targetPosition + Vector3.up * 0.5f;
+
             direction = (endPos - startPos).normalized;
-            direction.y = 0;
+            direction.y = 0f;
             direction.Normalize();
 
-            speed = projectileSpeed;
+            speed = projectileSpeed > 0 ? projectileSpeed : DEFAULT_SPEED;
             damage = projectileDamage;
             traveledDistance = 0f;
+            spawnTime = Time.time;
 
             transform.rotation = Quaternion.LookRotation(direction);
 
-            Debug.Log($"[Projectile] Initialize - startPos: {startPos}, target: {targetPosition}");
-            Debug.Log($"[Projectile] Direction: {direction}, Speed: {speed}, DeltaTime will be: {Time.deltaTime}");
+            GameEvents.RaiseProjectileSpawned(this);
         }
 
         private void Update()
         {
-            if (!IsServer) return;
-            if (!IsSpawned) return;
+            if (!IsServer || !IsSpawned) return;
 
-            var moveDistance = speed * Time.deltaTime;
-            traveledDistance += moveDistance;
-
-            Debug.Log($"[Projectile] Update - Pos: {transform.position}, MoveDist: {moveDistance}, Speed: {speed}, DT: {Time.deltaTime}");
-
-            if (traveledDistance >= maxDistance)
+            if (Time.time - spawnTime > 3f || traveledDistance >= MAX_DISTANCE)
             {
                 Despawn();
                 return;
             }
 
-            transform.position += direction * moveDistance;
-            Debug.Log($"[Projectile] New Pos: {transform.position}");
+            var moveDistance = speed * Time.deltaTime;
+            var hit = Physics.Raycast(transform.position, direction, out var hitInfo, moveDistance + 0.5f);
 
-            if (Physics.Raycast(transform.position, direction, out var hit, moveDistance + 0.5f))
+            if (hit)
             {
-                var tower = hit.collider.GetComponent<TowerRuntime>();
+                var tower = hitInfo.collider.GetComponent<TowerRuntime>();
                 if (tower != null)
                 {
                     tower.TakeDamageServerRpc(damage);
+                    GameEvents.RaiseProjectileHitTower(this, tower);
                 }
 
                 Despawn();
+                return;
             }
+
+            transform.position += direction * moveDistance;
+            traveledDistance += moveDistance;
         }
 
-        private void Despawn()
+        public void Despawn()
         {
-            if (IsServer && IsSpawned)
-            {
-                GetComponent<NetworkObject>().Despawn();
-            }
+            if (!IsServer || !IsSpawned) return;
+
+            GameEvents.RaiseProjectileDespawned(this);
+            NetworkObject.Despawn();
         }
     }
 }
