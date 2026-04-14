@@ -39,6 +39,9 @@ namespace Client.Controllers
         private TowerPlacementController placementController;
 
         [SerializeField]
+        private PlayerWeaponController weaponController;
+
+        [SerializeField]
         Animator animator;
 
         private Rigidbody rigidBody;
@@ -77,6 +80,16 @@ namespace Client.Controllers
             {
                 jumpPressedTime = Time.time;
             }
+        }
+
+        public void OnFireWeapon(InputAction.CallbackContext context)
+        {
+            weaponController?.OnFire(context);
+        }
+
+        public void OnSwitchWeapon(InputAction.CallbackContext context)
+        {
+            weaponController?.OnSwitchWeapon(context);
         }
 
         private void FixedUpdate()

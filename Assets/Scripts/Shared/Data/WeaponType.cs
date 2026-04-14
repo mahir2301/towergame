@@ -26,5 +26,6 @@ namespace Shared.Data
         public float damage;
         public float range;
         public float fireRate;
+        public int energyCostPerShot;
     }
 }

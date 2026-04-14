@@ -15,3 +15,8 @@ MonoBehaviour:
   id: fist
   displayName: Fist
   classType: {fileID: 11400000, guid: 406d1cdfea4bfdf48b58869e79983afc, type: 2}
+  stats:
+    damage: 0
+    range: 14.45
+    fireRate: 0.5
+    energyCostPerShot: 0
