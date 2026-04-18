@@ -14,6 +14,7 @@ namespace Shared.Data
 
         public string Id => id;
         public string DisplayName => displayName;
+        public IReadOnlyList<EnergyType> CompatibleEnergyTypes => compatibleEnergyTypes;
 
         public bool CanConnectTo(EnergyType energyType)
         {

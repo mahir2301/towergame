@@ -1,0 +1,247 @@
+using System.Collections.Generic;
+using Shared;
+using Shared.Data;
+using Shared.Utilities;
+using Unity.Netcode;
+using UnityEngine;
+
+namespace Shared.Entities
+{
+    public static class EntityManager
+    {
+        private static readonly Dictionary<uint, EntityRuntime> entitiesById = new();
+        private static readonly Dictionary<ulong, uint> playerEntityByClient = new();
+
+        private static uint nextEntityId = 1;
+
+        public static IReadOnlyDictionary<uint, EntityRuntime> ActiveEntities => entitiesById;
+        public static IReadOnlyDictionary<ulong, uint> PlayerEntitiesByClient => playerEntityByClient;
+
+        public static bool TryGetEntity(EntityId entityId, out EntityRuntime runtime)
+        {
+            return entitiesById.TryGetValue(entityId.Value, out runtime);
+        }
+
+        public static bool TryGetPlayerEntityId(ulong clientId, out EntityId entityId)
+        {
+            if (playerEntityByClient.TryGetValue(clientId, out var rawId))
+            {
+                entityId = new EntityId(rawId);
+                return true;
+            }
+
+            entityId = EntityId.Invalid;
+            return false;
+        }
+
+        public static bool TryGetPlayerEntityForClient(ulong clientId, out EntityRuntime runtime)
+        {
+            runtime = null;
+            if (!TryGetPlayerEntityId(clientId, out var entityId))
+                return false;
+
+            return TryGetEntity(entityId, out runtime);
+        }
+
+        public static void GetEntitiesByKind(EntityKind kind, List<EntityRuntime> results)
+        {
+            if (results == null)
+                return;
+
+            results.Clear();
+            foreach (var kvp in entitiesById)
+            {
+                var runtime = kvp.Value;
+                if (runtime != null && runtime.Kind == kind)
+                    results.Add(runtime);
+            }
+        }
+
+        public static bool TryGetEntityType(EntityRuntime runtime, out EntityType type)
+        {
+            type = null;
+            if (runtime == null || string.IsNullOrEmpty(runtime.EntityTypeId))
+                return false;
+
+            var registry = GameRegistry.Instance;
+            if (registry == null)
+                return false;
+
+            type = registry.GetEntityType(runtime.EntityTypeId);
+            return type != null;
+        }
+
+        public static bool TrySpawnByTypeId(string typeId, Vector3 position, Quaternion rotation, ulong ownerClientId,
+            out EntityRuntime runtime)
+        {
+            runtime = null;
+
+            var registry = GameRegistry.Instance;
+            if (registry == null)
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
+                    $"Cannot spawn entity '{typeId}' because GameRegistry is unavailable.");
+                return false;
+            }
+
+            var type = registry.GetEntityType(typeId);
+            if (type == null)
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntityMissingTypeDefinition,
+                    $"Cannot spawn entity. EntityType '{typeId}' was not found in GameRegistry.");
+                return false;
+            }
+
+            return TrySpawn(type, position, rotation, ownerClientId, out runtime);
+        }
+
+        public static bool TrySpawnByKind(EntityKind kind, Vector3 position, Quaternion rotation, ulong ownerClientId,
+            out EntityRuntime runtime)
+        {
+            runtime = null;
+
+            var registry = GameRegistry.Instance;
+            if (registry == null)
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
+                    $"Cannot spawn entity kind {kind} because GameRegistry is unavailable.");
+                return false;
+            }
+
+            var type = registry.GetEntityType(kind);
+            if (type == null)
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntityMissingTypeDefinition,
+                    $"Cannot spawn entity kind {kind} because no EntityType is registered.");
+                return false;
+            }
+
+            return TrySpawn(type, position, rotation, ownerClientId, out runtime);
+        }
+
+        internal static void RegisterRuntime(EntityRuntime runtime)
+        {
+            if (runtime == null)
+                return;
+
+            if (runtime.IsServer && !runtime.EntityId.IsValid)
+                runtime.AssignServerEntityId(AllocateEntityId());
+
+            if (!runtime.EntityId.IsValid)
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntityMissingForCommand,
+                    $"Rejected registration for '{runtime.name}' because EntityId is invalid.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(runtime.EntityTypeId))
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntityMissingTypeId,
+                    $"Rejected registration for entity id={runtime.EntityId}: EntityTypeId is required.");
+                return;
+            }
+
+            if (!TryGetEntityType(runtime, out var type))
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntityMissingTypeDefinition,
+                    $"Rejected registration for entity id={runtime.EntityId}: missing EntityType '{runtime.EntityTypeId}'.");
+                return;
+            }
+
+            if (runtime.Kind != type.Kind)
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntityInvalidCommandPayload,
+                    $"Rejected registration for entity id={runtime.EntityId}: kind '{runtime.Kind}' does not match type '{type.Id}' kind '{type.Kind}'.");
+                return;
+            }
+
+            entitiesById[runtime.EntityId.Value] = runtime;
+
+            if (runtime.EntityOwnerClientId != ulong.MaxValue)
+                GameEvents.RaiseEntityOwnerAssigned(runtime, runtime.EntityOwnerClientId);
+
+            if (runtime.Kind == EntityKind.Player && runtime.EntityOwnerClientId != ulong.MaxValue)
+            {
+                playerEntityByClient[runtime.EntityOwnerClientId] = runtime.EntityId.Value;
+                RuntimeLog.Entity.Info(RuntimeLog.Code.EntityPlayerAssigned,
+                    $"Assigned player entity {runtime.EntityId} to client {runtime.EntityOwnerClientId}.");
+            }
+
+            RuntimeLog.Entity.Info(RuntimeLog.Code.EntitySpawned,
+                $"Registered entity id={runtime.EntityId} kind={runtime.Kind} owner={runtime.EntityOwnerClientId}.");
+            GameEvents.RaiseEntitySpawned(runtime);
+        }
+
+        internal static void UnregisterRuntime(EntityRuntime runtime)
+        {
+            if (runtime == null || !runtime.EntityId.IsValid)
+                return;
+
+            if (entitiesById.TryGetValue(runtime.EntityId.Value, out var existing) && existing == runtime)
+                entitiesById.Remove(runtime.EntityId.Value);
+
+            if (runtime.Kind == EntityKind.Player && runtime.EntityOwnerClientId != ulong.MaxValue
+                && playerEntityByClient.TryGetValue(runtime.EntityOwnerClientId, out var mappedId)
+                && mappedId == runtime.EntityId.Value)
+            {
+                playerEntityByClient.Remove(runtime.EntityOwnerClientId);
+            }
+
+            RuntimeLog.Entity.Info(RuntimeLog.Code.EntityDespawned,
+                $"Unregistered entity id={runtime.EntityId} kind={runtime.Kind} owner={runtime.EntityOwnerClientId}.");
+            GameEvents.RaiseEntityDespawned(runtime);
+        }
+
+        private static EntityId AllocateEntityId()
+        {
+            if (nextEntityId == EntityId.InvalidValue)
+                nextEntityId = 1;
+
+            var id = nextEntityId;
+            nextEntityId++;
+            return new EntityId(id);
+        }
+
+        private static bool TrySpawn(EntityType type, Vector3 position, Quaternion rotation, ulong ownerClientId,
+            out EntityRuntime runtime)
+        {
+            runtime = null;
+            if (type == null)
+                return false;
+
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer || !NetworkManager.Singleton.IsListening)
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
+                    $"Cannot spawn entity '{type.Id}' because server networking is not active.");
+                return false;
+            }
+
+            if (type.Prefab == null)
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
+                    $"Cannot spawn entity '{type.Id}' because its prefab is missing.");
+                return false;
+            }
+
+            runtime = Object.Instantiate(type.Prefab, position, rotation);
+            runtime.ConfigureServerMetadata(type.Id, type.Kind, ownerClientId);
+
+            var networkObject = runtime.GetComponent<NetworkObject>();
+            if (networkObject == null)
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
+                    $"Cannot spawn entity '{type.Id}' because prefab lacks NetworkObject.");
+                Object.Destroy(runtime.gameObject);
+                runtime = null;
+                return false;
+            }
+
+            if (ownerClientId == ulong.MaxValue)
+                networkObject.Spawn();
+            else
+                networkObject.SpawnWithOwnership(ownerClientId);
+
+            return true;
+        }
+    }
+}

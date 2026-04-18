@@ -11,6 +11,7 @@ namespace Shared.Utilities
         public static readonly LogChannel Phase = new("[Phase]");
         public static readonly LogChannel Overlay = new("[Overlay]");
         public static readonly LogChannel Visual = new("[Visual]");
+        public static readonly LogChannel Entity = new("[Entity]");
 
         public static class Code
         {
@@ -36,6 +37,17 @@ namespace Shared.Utilities
             public const string OverlayMissingEnergyLabel = "OV-002";
             public const string OverlayMissingTowerIndicator = "OV-003";
             public const string VisualMissingGroundShader = "VS-001";
+            public const string EntitySpawned = "EN-001";
+            public const string EntityDespawned = "EN-002";
+            public const string EntityPlayerAssigned = "EN-003";
+            public const string EntityOwnershipRejected = "EN-004";
+            public const string EntityInvalidCommandPayload = "EN-005";
+            public const string EntityMissingForCommand = "EN-006";
+            public const string EntityProjectileHitResolved = "EN-007";
+            public const string EntityDisconnectCleanup = "EN-008";
+            public const string EntityMissingTypeDefinition = "EN-009";
+            public const string EntityMissingTypeId = "EN-010";
+            public const string EntitySpawnFailed = "EN-011";
         }
 
         public readonly struct LogChannel

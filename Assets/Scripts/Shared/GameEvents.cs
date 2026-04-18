@@ -1,4 +1,5 @@
 using System;
+using Shared.Entities;
 using Shared.Runtime;
 using UnityEngine;
 
@@ -17,6 +18,9 @@ namespace Shared
         public static event Action<PlayerRuntime, Vector3, string> WeaponFired;
         public static event Action<PlayerRuntime, int> WeaponSwitched;
         public static event Action<string, Vector2Int, PlacementResult> PlacementResultReceived;
+        public static event Action<EntityRuntime> EntitySpawned;
+        public static event Action<EntityRuntime> EntityDespawned;
+        public static event Action<EntityRuntime, ulong> EntityOwnerAssigned;
 
         public static void RaiseEnergySpawned(EnergyRuntime energy) => EnergySpawned?.Invoke(energy);
         public static void RaiseEnergyDespawned(EnergyRuntime energy) => EnergyDespawned?.Invoke(energy);
@@ -29,5 +33,8 @@ namespace Shared
         public static void RaiseWeaponFired(PlayerRuntime player, Vector3 target, string weaponId) => WeaponFired?.Invoke(player, target, weaponId);
         public static void RaiseWeaponSwitched(PlayerRuntime player, int weaponIndex) => WeaponSwitched?.Invoke(player, weaponIndex);
         public static void RaisePlacementResultReceived(string towerConfigId, Vector2Int gridPos, PlacementResult result) => PlacementResultReceived?.Invoke(towerConfigId, gridPos, result);
+        public static void RaiseEntitySpawned(EntityRuntime entity) => EntitySpawned?.Invoke(entity);
+        public static void RaiseEntityDespawned(EntityRuntime entity) => EntityDespawned?.Invoke(entity);
+        public static void RaiseEntityOwnerAssigned(EntityRuntime entity, ulong ownerClientId) => EntityOwnerAssigned?.Invoke(entity, ownerClientId);
     }
 }

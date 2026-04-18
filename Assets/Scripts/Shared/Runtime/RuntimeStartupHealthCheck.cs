@@ -21,6 +21,12 @@ namespace Shared.Runtime
                     $"Missing GameRegistry at Resources/GameRegistry in scene '{sceneName}'.");
                 hasError = true;
             }
+            else if (!GameRegistry.Instance.ValidateAllTypes(out var registryIssue))
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthConfigIssue,
+                    $"GameRegistry validation failed: {registryIssue}");
+                hasError = true;
+            }
 
             if (NetworkManager.Singleton == null)
             {
