@@ -1,4 +1,6 @@
 using Shared;
+using Shared.Runtime;
+using Shared.Utilities;
 using UnityEngine;
 using Unity.Netcode;
 
@@ -18,6 +20,7 @@ namespace Client.Visuals
         private Material material;
         private Color gridColorHidden;
         private bool gridVisible = true;
+        private bool subscribedToPhaseEvents;
 
         private void Awake()
         {
@@ -32,7 +35,8 @@ namespace Client.Visuals
             var shader = Shader.Find("Custom/Ground");
             if (shader == null)
             {
-                Debug.LogError("GridVisuals: Could not find 'Custom/Ground' shader!");
+                RuntimeLog.Visual.Error(RuntimeLog.Code.VisualMissingGroundShader,
+                    "Could not find 'Custom/Ground' shader.");
                 return;
             }
 
@@ -48,14 +52,38 @@ namespace Client.Visuals
 
         private void Start()
         {
-            GameEvents.PhaseChanged += OnPhaseChanged;
-            SetGridVisible(PhaseManager.Instance.CurrentPhase == GamePhase.Building);
+            if (RuntimeBootstrap.IsReady)
+                SubscribeToPhaseEvents();
+        }
+
+        private void Update()
+        {
+            if (!subscribedToPhaseEvents && RuntimeBootstrap.IsReady)
+                SubscribeToPhaseEvents();
         }
 
         private void OnDestroy()
         {
-            GameEvents.PhaseChanged -= OnPhaseChanged;
+            if (subscribedToPhaseEvents)
+            {
+                GameEvents.PhaseChanged -= OnPhaseChanged;
+                subscribedToPhaseEvents = false;
+            }
+
             if (material != null) Destroy(material);
+        }
+
+        private void SubscribeToPhaseEvents()
+        {
+            if (subscribedToPhaseEvents)
+                return;
+
+            GameEvents.PhaseChanged += OnPhaseChanged;
+            subscribedToPhaseEvents = true;
+
+            var phaseManager = PhaseManager.Instance;
+            if (phaseManager != null)
+                SetGridVisible(phaseManager.CurrentPhase == GamePhase.Building);
         }
 
         private void OnPhaseChanged(GamePhase phase)

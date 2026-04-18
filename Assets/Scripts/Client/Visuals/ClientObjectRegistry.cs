@@ -11,6 +11,7 @@ namespace Client.Visuals
 
         private readonly Dictionary<ulong, EnergyRuntime> energyNodes = new();
         private readonly Dictionary<ulong, TowerRuntime> towers = new();
+        private bool subscribedToGameEvents;
 
         public IReadOnlyDictionary<ulong, EnergyRuntime> EnergyNodes => energyNodes;
         public IReadOnlyDictionary<ulong, TowerRuntime> Towers => towers;
@@ -24,18 +25,26 @@ namespace Client.Visuals
             }
             Instance = this;
 
-            GameEvents.EnergySpawned += OnEnergySpawned;
-            GameEvents.EnergyDespawned += OnEnergyDespawned;
-            GameEvents.TowerSpawned += OnTowerSpawned;
-            GameEvents.TowerDespawned += OnTowerDespawned;
+            if (!subscribedToGameEvents)
+            {
+                GameEvents.EnergySpawned += OnEnergySpawned;
+                GameEvents.EnergyDespawned += OnEnergyDespawned;
+                GameEvents.TowerSpawned += OnTowerSpawned;
+                GameEvents.TowerDespawned += OnTowerDespawned;
+                subscribedToGameEvents = true;
+            }
         }
 
         private void OnDestroy()
         {
-            GameEvents.EnergySpawned -= OnEnergySpawned;
-            GameEvents.EnergyDespawned -= OnEnergyDespawned;
-            GameEvents.TowerSpawned -= OnTowerSpawned;
-            GameEvents.TowerDespawned -= OnTowerDespawned;
+            if (subscribedToGameEvents)
+            {
+                GameEvents.EnergySpawned -= OnEnergySpawned;
+                GameEvents.EnergyDespawned -= OnEnergyDespawned;
+                GameEvents.TowerSpawned -= OnTowerSpawned;
+                GameEvents.TowerDespawned -= OnTowerDespawned;
+                subscribedToGameEvents = false;
+            }
 
             if (Instance == this)
                 Instance = null;

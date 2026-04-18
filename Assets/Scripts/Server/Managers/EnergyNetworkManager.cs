@@ -14,6 +14,7 @@ namespace Server.Managers
         private readonly List<EnergyRuntime> energyNodes = new();
         private readonly Dictionary<ulong, TowerRuntime> activeAntennas = new();
         private readonly Dictionary<ulong, ulong> towerToEnergy = new();
+        private bool subscribedToRuntimeEvents;
 
         private void Awake()
         {
@@ -24,20 +25,28 @@ namespace Server.Managers
             }
             Instance = this;
 
-            EnergyRuntime.ServerSpawned += RegisterEnergyRuntime;
-            EnergyRuntime.ServerDespawned += UnregisterEnergyRuntime;
-            TowerRuntime.ServerSpawned += OnTowerSpawned;
-            TowerRuntime.ServerDespawned += OnTowerDespawned;
+            if (!subscribedToRuntimeEvents)
+            {
+                EnergyRuntime.ServerSpawned += RegisterEnergyRuntime;
+                EnergyRuntime.ServerDespawned += UnregisterEnergyRuntime;
+                TowerRuntime.ServerSpawned += OnTowerSpawned;
+                TowerRuntime.ServerDespawned += OnTowerDespawned;
+                subscribedToRuntimeEvents = true;
+            }
         }
 
         public override void OnDestroy()
         {
             base.OnDestroy();
 
-            EnergyRuntime.ServerSpawned -= RegisterEnergyRuntime;
-            EnergyRuntime.ServerDespawned -= UnregisterEnergyRuntime;
-            TowerRuntime.ServerSpawned -= OnTowerSpawned;
-            TowerRuntime.ServerDespawned -= OnTowerDespawned;
+            if (subscribedToRuntimeEvents)
+            {
+                EnergyRuntime.ServerSpawned -= RegisterEnergyRuntime;
+                EnergyRuntime.ServerDespawned -= UnregisterEnergyRuntime;
+                TowerRuntime.ServerSpawned -= OnTowerSpawned;
+                TowerRuntime.ServerDespawned -= OnTowerDespawned;
+                subscribedToRuntimeEvents = false;
+            }
 
             if (Instance == this)
                 Instance = null;
@@ -45,11 +54,17 @@ namespace Server.Managers
 
         private void RegisterEnergyRuntime(EnergyRuntime runtime)
         {
+            if (runtime == null)
+                return;
+
             energyNodes.Add(runtime);
         }
 
         private void UnregisterEnergyRuntime(EnergyRuntime runtime)
         {
+            if (runtime == null)
+                return;
+
             energyNodes.Remove(runtime);
 
             var toDisconnect = new List<ulong>();
@@ -64,11 +79,17 @@ namespace Server.Managers
 
         private void OnTowerSpawned(TowerRuntime tower)
         {
+            if (tower == null)
+                return;
+
             TryConnectTowerToEnergy(tower);
         }
 
         private void OnTowerDespawned(TowerRuntime tower)
         {
+            if (tower == null)
+                return;
+
             DisconnectTower(tower);
         }
 

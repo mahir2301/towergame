@@ -16,6 +16,7 @@ namespace Shared
         public static event Action<GamePhase> PhaseChanged;
         public static event Action<PlayerRuntime, Vector3, string> WeaponFired;
         public static event Action<PlayerRuntime, int> WeaponSwitched;
+        public static event Action<string, Vector2Int, PlacementResult> PlacementResultReceived;
 
         public static void RaiseEnergySpawned(EnergyRuntime energy) => EnergySpawned?.Invoke(energy);
         public static void RaiseEnergyDespawned(EnergyRuntime energy) => EnergyDespawned?.Invoke(energy);
@@ -27,5 +28,6 @@ namespace Shared
         public static void RaisePhaseChanged(GamePhase phase) => PhaseChanged?.Invoke(phase);
         public static void RaiseWeaponFired(PlayerRuntime player, Vector3 target, string weaponId) => WeaponFired?.Invoke(player, target, weaponId);
         public static void RaiseWeaponSwitched(PlayerRuntime player, int weaponIndex) => WeaponSwitched?.Invoke(player, weaponIndex);
+        public static void RaisePlacementResultReceived(string towerConfigId, Vector2Int gridPos, PlacementResult result) => PlacementResultReceived?.Invoke(towerConfigId, gridPos, result);
     }
 }

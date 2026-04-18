@@ -3,6 +3,7 @@ using Shared.Determinism;
 using Shared.Data;
 using Shared.Runtime;
 using Shared.Grid;
+using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -10,8 +11,6 @@ namespace Server.Managers
 {
     public class WorldGenerationManager : NetworkBehaviour
     {
-        private const string LogPrefix = "[WorldGen]";
-
         [Header("Terrain")]
         [SerializeField] private int minDistanceFromEdge = 3;
         [SerializeField] private float waterThreshold = 0.62f;
@@ -42,34 +41,40 @@ namespace Server.Managers
 
             if (!HasRequiredReferences(out var issue))
             {
-                Debug.LogError($"{LogPrefix} Cannot generate world: {issue}");
+                RuntimeLog.WorldGen.Error(RuntimeLog.Code.WorldGenTerrainFailed,
+                    $"Cannot generate world: {issue}");
                 return;
             }
 
             var seed = CreateServerSeed();
             gridManager.ClearWorldState();
 
-            Debug.Log($"{LogPrefix} Starting world generation with seed {seed}.");
+            RuntimeLog.WorldGen.Info(RuntimeLog.Code.WorldGenStart,
+                $"Starting world generation with seed {seed}.");
 
             try
             {
                 GenerateTerrain(seed);
-                Debug.Log($"{LogPrefix} Terrain generation complete.");
+                RuntimeLog.WorldGen.Info(RuntimeLog.Code.WorldGenTerrainDone,
+                    "Terrain generation complete.");
             }
             catch (Exception ex)
             {
-                Debug.LogError($"{LogPrefix} Terrain generation failed: {ex}");
+                RuntimeLog.WorldGen.Error(RuntimeLog.Code.WorldGenTerrainFailed,
+                    $"Terrain generation failed: {ex}");
                 return;
             }
 
             try
             {
                 SpawnEnergySources(seed);
-                Debug.Log($"{LogPrefix} Energy source spawn complete.");
+                RuntimeLog.WorldGen.Info(RuntimeLog.Code.WorldGenEnergyDone,
+                    "Energy source spawn complete.");
             }
             catch (Exception ex)
             {
-                Debug.LogError($"{LogPrefix} Energy source spawn failed: {ex}");
+                RuntimeLog.WorldGen.Error(RuntimeLog.Code.WorldGenEnergyFailed,
+                    $"Energy source spawn failed: {ex}");
                 return;
             }
 
@@ -93,7 +98,8 @@ namespace Server.Managers
             worldGenerationState.SetServerValues(generatedSeed, minDistanceFromEdge, waterThreshold, waterNoiseScale,
                 waterSmoothPasses);
             statePublished = true;
-            Debug.Log($"{LogPrefix} Published world state (seed={generatedSeed}).");
+            RuntimeLog.WorldGen.Info(RuntimeLog.Code.WorldGenStatePublished,
+                $"Published world state (seed={generatedSeed}).");
         }
 
         private void GenerateTerrain(int seed)

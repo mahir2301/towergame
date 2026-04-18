@@ -1,3 +1,4 @@
+using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -5,8 +6,6 @@ namespace Server.Managers
 {
     public class NetworkStarter : MonoBehaviour
     {
-        private const string LogPrefix = "[Network]";
-
         [SerializeField] private bool autoStartHost = true;
 
         private void Start()
@@ -16,7 +15,8 @@ namespace Server.Managers
 
             if (NetworkManager.Singleton == null)
             {
-                Debug.LogError($"{LogPrefix} Cannot auto-start host because NetworkManager.Singleton is missing.");
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,
+                    "Cannot auto-start host because NetworkManager.Singleton is missing.");
                 return;
             }
 
@@ -25,7 +25,8 @@ namespace Server.Managers
 
             var started = NetworkManager.Singleton.StartHost();
             if (!started)
-                Debug.LogError($"{LogPrefix} StartHost() failed.");
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthConfigIssue,
+                    "StartHost() failed.");
         }
     }
 }

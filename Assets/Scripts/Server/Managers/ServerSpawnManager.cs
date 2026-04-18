@@ -2,6 +2,7 @@ using Shared.Data;
 using Shared.Grid;
 using Shared;
 using Shared.Runtime;
+using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -9,11 +10,11 @@ namespace Server.Managers
 {
     public class ServerSpawnManager : NetworkBehaviour
     {
-        private const string LogPrefix = "[Placement]";
-
         public static ServerSpawnManager Instance { get; private set; }
 
         [SerializeField] private GridManager gridManager;
+
+        private bool subscribedToPlacementRequests;
 
         private void Awake()
         {
@@ -25,30 +26,45 @@ namespace Server.Managers
             Instance = this;
 
             TowerSpawnSystem.OnServerPlaceRequested += HandlePlaceRequested;
+            subscribedToPlacementRequests = true;
         }
 
         public override void OnDestroy()
         {
             base.OnDestroy();
 
-            TowerSpawnSystem.OnServerPlaceRequested -= HandlePlaceRequested;
+            if (subscribedToPlacementRequests)
+            {
+                TowerSpawnSystem.OnServerPlaceRequested -= HandlePlaceRequested;
+                subscribedToPlacementRequests = false;
+            }
 
             if (Instance == this)
                 Instance = null;
         }
 
-        private void HandlePlaceRequested(ulong requesterClientId, TowerType config, Vector2Int gridPos)
+        private void HandlePlaceRequested(ulong requesterClientId, TowerType config, Vector2Int gridPos,
+            System.Action<PlacementResult> respond)
         {
-            if (!IsServer) return;
-
-            TryPlaceTowerRuntime(gridPos, config, out _, out var result);
-            if (result == PlacementResult.Success)
+            if (!IsServer)
             {
-                Debug.Log($"{LogPrefix} Client {requesterClientId} placed '{config.Id}' at {gridPos}.");
+                respond?.Invoke(PlacementResult.ServerUnavailable);
                 return;
             }
 
-            Debug.LogWarning($"{LogPrefix} Rejected client {requesterClientId} placement for '{config.Id}' at {gridPos}: {result}.");
+            TryPlaceTowerRuntime(gridPos, config, out _, out var result);
+            if (PlacementValidator.IsPlacementAllowed(result, allowOutOfEnergyRange: true))
+            {
+                RuntimeLog.Placement.Info(RuntimeLog.Code.PlacementAccepted,
+                    $"Client {requesterClientId} placed '{config.Id}' at {gridPos} (result={result}).");
+            }
+            else
+            {
+                RuntimeLog.Placement.Warning(RuntimeLog.Code.PlacementRejected,
+                    $"Rejected client {requesterClientId} placement for '{config.Id}' at {gridPos}: {result}.");
+            }
+
+            respond?.Invoke(result);
         }
 
         public bool TryPlaceEnergyRuntime(Vector2Int gridPos, EnergyType config, int maxCapacity,
@@ -104,29 +120,10 @@ namespace Server.Managers
                 return false;
             }
 
-            if (PhaseManager.Instance.CurrentPhase != GamePhase.Building)
-            {
-                result = PlacementResult.OutOfBuildPhase;
+            result = PlacementValidator.ValidatePlacement(gridPos, config, gridManager, PhaseManager.Instance,
+                EnergyNetworkManager.Instance.IsPositionInRange);
+            if (!PlacementValidator.IsPlacementAllowed(result, allowOutOfEnergyRange: true))
                 return false;
-            }
-
-            if (config?.Prefab == null)
-            {
-                result = PlacementResult.InvalidTowerType;
-                return false;
-            }
-
-            if (config.ClassType == null)
-            {
-                result = PlacementResult.InvalidTowerType;
-                return false;
-            }
-
-            if (!gridManager.IsValidPosition(gridPos))
-            {
-                result = PlacementResult.InvalidGridPosition;
-                return false;
-            }
 
             var prefab = config.Prefab.GetComponent<TowerRuntime>();
             if (prefab == null)

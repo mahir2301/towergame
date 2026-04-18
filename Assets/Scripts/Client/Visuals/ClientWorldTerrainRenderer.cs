@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Shared.Determinism;
 using Shared.Grid;
 using Shared.Runtime;
+using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -9,8 +10,6 @@ namespace Client.Visuals
 {
     public class ClientWorldTerrainRenderer : MonoBehaviour
     {
-        private const string LogPrefix = "[Water]";
-
         [SerializeField] private WorldGenerationState worldGenerationState;
         [SerializeField] private Material waterMaterial;
 
@@ -29,6 +28,9 @@ namespace Client.Visuals
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
                 return;
 
+            if (!RuntimeBootstrap.IsReady)
+                return;
+
             if (!EnsureStateReference())
                 return;
 
@@ -39,6 +41,9 @@ namespace Client.Visuals
         private void Update()
         {
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
+                return;
+
+            if (!RuntimeBootstrap.IsReady)
                 return;
 
             if (!EnsureStateReference())
@@ -114,7 +119,8 @@ namespace Client.Visuals
             var gridManager = GridManager.Instance;
             if (gridManager == null)
             {
-                Debug.LogError($"{LogPrefix} Cannot rebuild terrain because GridManager.Instance is missing.");
+                RuntimeLog.Water.Error(RuntimeLog.Code.WaterMissingGrid,
+                    "Cannot rebuild terrain because GridManager.Instance is missing.");
                 return;
             }
 
@@ -135,7 +141,8 @@ namespace Client.Visuals
             lastAppliedWaterNoiseScale = waterNoiseScale;
             lastAppliedWaterSmoothPasses = waterSmoothPasses;
 
-            Debug.Log($"{LogPrefix} Rebuilt water mesh for seed={newSeed} cells={waterCells.Count}.");
+            RuntimeLog.Water.Info(RuntimeLog.Code.WaterRebuilt,
+                $"Rebuilt water mesh for seed={newSeed} cells={waterCells.Count}.");
         }
 
         private void RebuildWaterVisuals(HashSet<Vector2Int> waterCells)

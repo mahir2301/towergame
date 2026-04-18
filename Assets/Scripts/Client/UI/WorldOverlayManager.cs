@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Shared.Runtime;
+using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -30,7 +31,12 @@ namespace Client.UI
                 return;
             }
 
-            if (uiDocument == null) { Debug.LogError("[Overlay] UI Document not assigned"); return; }
+            if (uiDocument == null)
+            {
+                RuntimeLog.Overlay.Error(RuntimeLog.Code.OverlayMissingDocument,
+                    "UI Document not assigned.");
+                return;
+            }
 
             root = uiDocument.rootVisualElement;
             if (overlayStyleSheet != null)
@@ -54,7 +60,12 @@ namespace Client.UI
             var overlay = energyTemplate.CloneTree();
             overlay.style.position = Position.Absolute;
             var label = overlay.Q<Label>("energy-label");
-            if (label == null) { Debug.LogWarning("[Overlay] Energy template missing 'energy-label'"); return; }
+            if (label == null)
+            {
+                RuntimeLog.Overlay.Warning(RuntimeLog.Code.OverlayMissingEnergyLabel,
+                    "Energy template missing 'energy-label'.");
+                return;
+            }
 
             root.Add(overlay);
             energyOverlays[energy] = (overlay, label);
@@ -74,7 +85,12 @@ namespace Client.UI
             var overlay = towerTemplate.CloneTree();
             overlay.style.position = Position.Absolute;
             var indicator = overlay.Q("tower-indicator");
-            if (indicator == null) { Debug.LogWarning("[Overlay] Tower template missing 'tower-indicator'"); return; }
+            if (indicator == null)
+            {
+                RuntimeLog.Overlay.Warning(RuntimeLog.Code.OverlayMissingTowerIndicator,
+                    "Tower template missing 'tower-indicator'.");
+                return;
+            }
 
             root.Add(overlay);
             towerOverlays[tower] = (overlay, indicator);

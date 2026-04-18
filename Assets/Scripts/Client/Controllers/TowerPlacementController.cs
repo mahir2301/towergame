@@ -13,8 +13,6 @@ namespace Client.Controllers
 {
     public class TowerPlacementController : MonoBehaviour
     {
-        private const string LogPrefix = "[Placement]";
-
         [SerializeField] private GridManager gridManager;
         [SerializeField] private TowerSpawnSystem towerSpawnSystem;
         [SerializeField] private Camera mainCamera;
@@ -26,6 +24,7 @@ namespace Client.Controllers
         private Renderer[] ghostRenderers;
         private MaterialPropertyBlock ghostPropertyBlock;
         private Vector2Int? currentGridPos;
+        private bool subscribedToPlacementResults;
 
         private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
 
@@ -33,12 +32,25 @@ namespace Client.Controllers
         {
             ghostPropertyBlock = new MaterialPropertyBlock();
             CreateGhost();
+            SubscribeToPlacementResults();
+        }
+
+        private void OnDestroy()
+        {
+            UnsubscribeFromPlacementResults();
         }
 
         private void Update()
         {
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
                 return;
+
+            if (!RuntimeBootstrap.IsReady)
+            {
+                if (ghostInstance != null)
+                    ghostInstance.SetActive(false);
+                return;
+            }
 
             UpdateGhostState();
         }
@@ -127,6 +139,9 @@ namespace Client.Controllers
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
                 return;
 
+            if (!RuntimeBootstrap.IsReady)
+                return;
+
             if (!context.performed)
                 return;
 
@@ -137,9 +152,10 @@ namespace Client.Controllers
                 return;
 
             var result = EvaluateClientPlacement(currentGridPos.Value, currentTowerConfig);
-            if (result != PlacementResult.Success && result != PlacementResult.OutOfEnergyRange)
+            if (!PlacementValidator.IsPlacementAllowed(result, allowOutOfEnergyRange: true))
             {
-                Debug.Log($"{LogPrefix} Client prevented placement for '{currentTowerConfig.Id}' at {currentGridPos.Value}: {result}.");
+                RuntimeLog.Placement.Info(RuntimeLog.Code.PlacementClientBlocked,
+                    $"Client prevented placement for '{currentTowerConfig.Id}' at {currentGridPos.Value}: {result}.");
                 return;
             }
 
@@ -148,23 +164,39 @@ namespace Client.Controllers
 
         private PlacementResult EvaluateClientPlacement(Vector2Int gridPos, TowerType towerConfig)
         {
-            if (gridManager == null || towerSpawnSystem == null || PhaseManager.Instance == null)
-                return PlacementResult.MissingDependencies;
+            return PlacementValidator.ValidatePlacement(gridPos, towerConfig, gridManager, PhaseManager.Instance,
+                IsInEnergyRangeFromRegistry);
+        }
 
-            if (towerConfig == null || towerConfig.Prefab == null || towerConfig.ClassType == null)
-                return PlacementResult.InvalidTowerType;
+        private void SubscribeToPlacementResults()
+        {
+            if (subscribedToPlacementResults)
+                return;
 
-            if (PhaseManager.Instance.CurrentPhase != GamePhase.Building)
-                return PlacementResult.OutOfBuildPhase;
+            TowerSpawnSystem.PlacementResultReceived += HandlePlacementResultReceived;
+            subscribedToPlacementResults = true;
+        }
 
-            if (!gridManager.IsValidPosition(gridPos))
-                return PlacementResult.InvalidGridPosition;
+        private void UnsubscribeFromPlacementResults()
+        {
+            if (!subscribedToPlacementResults)
+                return;
 
-            if (!gridManager.IsCellAvailable(gridPos, towerConfig.Size, towerConfig.CanBePlacedOnWater))
-                return PlacementResult.CellBlocked;
+            TowerSpawnSystem.PlacementResultReceived -= HandlePlacementResultReceived;
+            subscribedToPlacementResults = false;
+        }
 
-            var isInRange = IsInEnergyRangeFromRegistry(gridPos, towerConfig.ClassType, towerConfig.Stats.energyCost);
-            return isInRange ? PlacementResult.Success : PlacementResult.OutOfEnergyRange;
+        private static void HandlePlacementResultReceived(string towerConfigId, Vector2Int gridPos, PlacementResult result)
+        {
+            if (PlacementValidator.IsPlacementAllowed(result, allowOutOfEnergyRange: true))
+            {
+                RuntimeLog.Placement.Info(RuntimeLog.Code.PlacementServerResult,
+                    $"Server accepted placement for '{towerConfigId}' at {gridPos} with result {result}.");
+                return;
+            }
+
+            RuntimeLog.Placement.Warning(RuntimeLog.Code.PlacementServerResult,
+                $"Server rejected placement for '{towerConfigId}' at {gridPos}: {result}.");
         }
 
         private static bool IsPointerOverAnyUI()

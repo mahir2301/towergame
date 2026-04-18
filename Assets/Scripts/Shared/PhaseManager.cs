@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using Shared.Utilities;
 
 namespace Shared
 {
@@ -8,6 +9,7 @@ namespace Shared
         public static PhaseManager Instance { get; private set; }
 
         private readonly NetworkVariable<GamePhase> currentPhase = new(GamePhase.Building);
+        private bool subscribedToPhaseChanges;
 
         public GamePhase CurrentPhase => currentPhase.Value;
 
@@ -33,19 +35,31 @@ namespace Shared
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            currentPhase.OnValueChanged += HandlePhaseChanged;
+
+            if (!subscribedToPhaseChanges)
+            {
+                currentPhase.OnValueChanged += HandlePhaseChanged;
+                subscribedToPhaseChanges = true;
+            }
+
             GameEvents.RaisePhaseChanged(currentPhase.Value);
         }
 
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-            currentPhase.OnValueChanged -= HandlePhaseChanged;
+
+            if (subscribedToPhaseChanges)
+            {
+                currentPhase.OnValueChanged -= HandlePhaseChanged;
+                subscribedToPhaseChanges = false;
+            }
         }
 
         private void HandlePhaseChanged(GamePhase previousValue, GamePhase newValue)
         {
-            Debug.Log($"[Phase] Changed: {previousValue} -> {newValue}");
+            RuntimeLog.Phase.Info(RuntimeLog.Code.PhaseChanged,
+                $"Changed: {previousValue} -> {newValue}");
             GameEvents.RaisePhaseChanged(newValue);
         }
 
