@@ -28,9 +28,6 @@ namespace Client.Visuals
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
                 return;
 
-            if (!RuntimeBootstrap.IsReady)
-                return;
-
             if (!EnsureStateReference())
                 return;
 
@@ -41,9 +38,6 @@ namespace Client.Visuals
         private void Update()
         {
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
-                return;
-
-            if (!RuntimeBootstrap.IsReady)
                 return;
 
             if (!EnsureStateReference())
