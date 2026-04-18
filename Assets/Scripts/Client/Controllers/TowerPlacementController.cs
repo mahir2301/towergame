@@ -13,6 +13,8 @@ namespace Client.Controllers
 {
     public class TowerPlacementController : MonoBehaviour
     {
+        private const string LogPrefix = "[Placement]";
+
         [SerializeField] private GridManager gridManager;
         [SerializeField] private TowerSpawnSystem towerSpawnSystem;
         [SerializeField] private Camera mainCamera;
@@ -58,7 +60,7 @@ namespace Client.Controllers
         {
             if (ghostInstance == null) return;
 
-            if (PhaseManager.Instance.CurrentPhase != GamePhase.Building)
+            if (PhaseManager.Instance == null || PhaseManager.Instance.CurrentPhase != GamePhase.Building)
             {
                 ghostInstance.SetActive(false);
                 currentGridPos = null;
@@ -81,7 +83,8 @@ namespace Client.Controllers
                 return;
             }
 
-            if (!gridManager.IsCellAvailable(currentGridPos.Value, currentTowerConfig.Size, currentTowerConfig.CanBePlacedOnWater))
+            var result = EvaluateClientPlacement(currentGridPos.Value, currentTowerConfig);
+            if (result != PlacementResult.Success && result != PlacementResult.OutOfEnergyRange)
             {
                 ghostInstance.SetActive(false);
                 return;
@@ -90,20 +93,15 @@ namespace Client.Controllers
             ghostInstance.SetActive(true);
             ghostInstance.transform.position = GridManager.TowerWorldPos(currentGridPos.Value, currentTowerConfig);
 
-            UpdateGhostEnergyIndicator();
+            UpdateGhostEnergyIndicator(result == PlacementResult.Success);
         }
 
-        private void UpdateGhostEnergyIndicator()
+        private void UpdateGhostEnergyIndicator(bool canConnect)
         {
             if (currentTowerConfig == null || currentGridPos == null)
                 return;
 
-            var isInRange = IsInEnergyRangeFromRegistry(
-                currentGridPos.Value,
-                currentTowerConfig.ClassType,
-                currentTowerConfig.Stats.energyCost);
-
-            ghostPropertyBlock.SetColor(BaseColorProperty, isInRange ? canConnectColor : cannotConnectColor);
+            ghostPropertyBlock.SetColor(BaseColorProperty, canConnect ? canConnectColor : cannotConnectColor);
 
             foreach (var renderer in ghostRenderers)
                 renderer.SetPropertyBlock(ghostPropertyBlock);
@@ -129,19 +127,44 @@ namespace Client.Controllers
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
                 return;
 
-            if (PhaseManager.Instance.CurrentPhase != GamePhase.Building)
+            if (!context.performed)
                 return;
 
-            if (!context.performed || currentGridPos is null || currentTowerConfig == null)
+            if (currentGridPos is null || currentTowerConfig == null)
                 return;
 
             if (IsPointerOverAnyUI())
                 return;
 
-            if (!gridManager.IsCellAvailable(currentGridPos.Value, currentTowerConfig.Size, currentTowerConfig.CanBePlacedOnWater))
+            var result = EvaluateClientPlacement(currentGridPos.Value, currentTowerConfig);
+            if (result != PlacementResult.Success && result != PlacementResult.OutOfEnergyRange)
+            {
+                Debug.Log($"{LogPrefix} Client prevented placement for '{currentTowerConfig.Id}' at {currentGridPos.Value}: {result}.");
                 return;
+            }
 
             towerSpawnSystem.RequestPlaceTowerServerRpc(currentTowerConfig.Id, currentGridPos.Value);
+        }
+
+        private PlacementResult EvaluateClientPlacement(Vector2Int gridPos, TowerType towerConfig)
+        {
+            if (gridManager == null || towerSpawnSystem == null || PhaseManager.Instance == null)
+                return PlacementResult.MissingDependencies;
+
+            if (towerConfig == null || towerConfig.Prefab == null || towerConfig.ClassType == null)
+                return PlacementResult.InvalidTowerType;
+
+            if (PhaseManager.Instance.CurrentPhase != GamePhase.Building)
+                return PlacementResult.OutOfBuildPhase;
+
+            if (!gridManager.IsValidPosition(gridPos))
+                return PlacementResult.InvalidGridPosition;
+
+            if (!gridManager.IsCellAvailable(gridPos, towerConfig.Size, towerConfig.CanBePlacedOnWater))
+                return PlacementResult.CellBlocked;
+
+            var isInRange = IsInEnergyRangeFromRegistry(gridPos, towerConfig.ClassType, towerConfig.Stats.energyCost);
+            return isInRange ? PlacementResult.Success : PlacementResult.OutOfEnergyRange;
         }
 
         private static bool IsPointerOverAnyUI()

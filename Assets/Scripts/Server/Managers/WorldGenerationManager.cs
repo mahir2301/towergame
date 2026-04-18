@@ -10,6 +10,8 @@ namespace Server.Managers
 {
     public class WorldGenerationManager : NetworkBehaviour
     {
+        private const string LogPrefix = "[WorldGen]";
+
         [Header("Terrain")]
         [SerializeField] private int minDistanceFromEdge = 3;
         [SerializeField] private float waterThreshold = 0.62f;
@@ -35,14 +37,42 @@ namespace Server.Managers
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            if (!IsServer || gridManager == null)
+            if (!IsServer)
                 return;
+
+            if (!HasRequiredReferences(out var issue))
+            {
+                Debug.LogError($"{LogPrefix} Cannot generate world: {issue}");
+                return;
+            }
 
             var seed = CreateServerSeed();
             gridManager.ClearWorldState();
 
-            GenerateTerrain(seed);
-            SpawnEnergySources(seed);
+            Debug.Log($"{LogPrefix} Starting world generation with seed {seed}.");
+
+            try
+            {
+                GenerateTerrain(seed);
+                Debug.Log($"{LogPrefix} Terrain generation complete.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"{LogPrefix} Terrain generation failed: {ex}");
+                return;
+            }
+
+            try
+            {
+                SpawnEnergySources(seed);
+                Debug.Log($"{LogPrefix} Energy source spawn complete.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"{LogPrefix} Energy source spawn failed: {ex}");
+                return;
+            }
+
             generatedSeed = seed;
             TryPublishWorldState();
         }
@@ -63,6 +93,7 @@ namespace Server.Managers
             worldGenerationState.SetServerValues(generatedSeed, minDistanceFromEdge, waterThreshold, waterNoiseScale,
                 waterSmoothPasses);
             statePublished = true;
+            Debug.Log($"{LogPrefix} Published world state (seed={generatedSeed}).");
         }
 
         private void GenerateTerrain(int seed)
@@ -98,6 +129,30 @@ namespace Server.Managers
                 var ticks = DateTime.UtcNow.Ticks;
                 return (int)(ticks ^ (ticks >> 32)) ^ GetInstanceID();
             }
+        }
+
+        public bool HasRequiredReferences(out string issue)
+        {
+            if (gridManager == null)
+            {
+                issue = "gridManager is not assigned.";
+                return false;
+            }
+
+            if (worldGenerationState == null)
+            {
+                issue = "worldGenerationState is not assigned.";
+                return false;
+            }
+
+            if (serverSpawnManager == null)
+            {
+                issue = "serverSpawnManager is not assigned.";
+                return false;
+            }
+
+            issue = null;
+            return true;
         }
     }
 }

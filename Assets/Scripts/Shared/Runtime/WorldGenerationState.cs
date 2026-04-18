@@ -36,11 +36,11 @@ namespace Shared.Runtime
             if (!IsServer)
                 return;
 
-            replicatedSeed.Value = seed;
             minDistanceFromEdge.Value = minEdge;
             waterThreshold.Value = threshold;
             waterNoiseScale.Value = noiseScale;
             waterSmoothPasses.Value = smoothPasses;
+            replicatedSeed.Value = seed;
         }
     }
 }

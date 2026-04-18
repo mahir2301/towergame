@@ -9,45 +9,133 @@ namespace Client.Visuals
 {
     public class ClientWorldTerrainRenderer : MonoBehaviour
     {
+        private const string LogPrefix = "[Water]";
+
         [SerializeField] private WorldGenerationState worldGenerationState;
         [SerializeField] private Material waterMaterial;
 
         private const float WaterSurfaceY = 0.06f;
 
         private GameObject waterMeshObject;
+        private int lastAppliedSeed = -1;
+        private int lastAppliedMinDistanceFromEdge = int.MinValue;
+        private float lastAppliedWaterThreshold = float.NaN;
+        private float lastAppliedWaterNoiseScale = float.NaN;
+        private int lastAppliedWaterSmoothPasses = int.MinValue;
+        private bool subscribedToSeed;
 
         private void Start()
         {
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
                 return;
 
-            worldGenerationState.Seed.OnValueChanged += OnSeedChanged;
+            if (!EnsureStateReference())
+                return;
 
-            if (worldGenerationState.ReplicatedSeed >= 0)
-                OnSeedChanged(-1, worldGenerationState.ReplicatedSeed);
+            SubscribeToSeedChange();
+            TryApplyTerrainFromState();
+        }
+
+        private void Update()
+        {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
+                return;
+
+            if (!EnsureStateReference())
+                return;
+
+            TryApplyTerrainFromState();
         }
 
         private void OnDestroy()
         {
-            worldGenerationState.Seed.OnValueChanged -= OnSeedChanged;
+            UnsubscribeFromSeedChange();
         }
 
         private void OnSeedChanged(int previousValue, int newValue)
         {
-            if (newValue < 0)
+            TryApplyTerrainFromState();
+        }
+
+        private bool EnsureStateReference()
+        {
+            if (worldGenerationState != null)
+                return true;
+
+            worldGenerationState = FindFirstObjectByType<WorldGenerationState>();
+            if (worldGenerationState == null)
+                return false;
+
+            SubscribeToSeedChange();
+            return true;
+        }
+
+        private void SubscribeToSeedChange()
+        {
+            if (subscribedToSeed || worldGenerationState == null)
                 return;
 
+            worldGenerationState.Seed.OnValueChanged += OnSeedChanged;
+            subscribedToSeed = true;
+        }
+
+        private void UnsubscribeFromSeedChange()
+        {
+            if (!subscribedToSeed || worldGenerationState == null)
+                return;
+
+            worldGenerationState.Seed.OnValueChanged -= OnSeedChanged;
+            subscribedToSeed = false;
+        }
+
+        private void TryApplyTerrainFromState()
+        {
+            if (worldGenerationState == null || !worldGenerationState.IsSpawned)
+                return;
+
+            var newSeed = worldGenerationState.ReplicatedSeed;
+            if (newSeed < 0)
+                return;
+
+            var minDistanceFromEdge = worldGenerationState.MinDistanceFromEdge;
+            var waterThreshold = worldGenerationState.WaterThreshold;
+            var waterNoiseScale = worldGenerationState.WaterNoiseScale;
+            var waterSmoothPasses = worldGenerationState.WaterSmoothPasses;
+
+            if (newSeed == lastAppliedSeed
+                && minDistanceFromEdge == lastAppliedMinDistanceFromEdge
+                && Mathf.Approximately(waterThreshold, lastAppliedWaterThreshold)
+                && Mathf.Approximately(waterNoiseScale, lastAppliedWaterNoiseScale)
+                && waterSmoothPasses == lastAppliedWaterSmoothPasses)
+            {
+                return;
+            }
+
             var gridManager = GridManager.Instance;
+            if (gridManager == null)
+            {
+                Debug.LogError($"{LogPrefix} Cannot rebuild terrain because GridManager.Instance is missing.");
+                return;
+            }
+
             var waterCells = GridWaterGenerator.Generate(
                 gridManager.GridSize,
-                worldGenerationState.MinDistanceFromEdge,
-                worldGenerationState.WaterNoiseScale,
-                worldGenerationState.WaterThreshold,
-                worldGenerationState.WaterSmoothPasses,
-                new System.Random(newValue));
+                minDistanceFromEdge,
+                waterNoiseScale,
+                waterThreshold,
+                waterSmoothPasses,
+                new System.Random(newSeed));
 
             gridManager.SetTerrainCells(waterCells);
             RebuildWaterVisuals(waterCells);
+
+            lastAppliedSeed = newSeed;
+            lastAppliedMinDistanceFromEdge = minDistanceFromEdge;
+            lastAppliedWaterThreshold = waterThreshold;
+            lastAppliedWaterNoiseScale = waterNoiseScale;
+            lastAppliedWaterSmoothPasses = waterSmoothPasses;
+
+            Debug.Log($"{LogPrefix} Rebuilt water mesh for seed={newSeed} cells={waterCells.Count}.");
         }
 
         private void RebuildWaterVisuals(HashSet<Vector2Int> waterCells)
