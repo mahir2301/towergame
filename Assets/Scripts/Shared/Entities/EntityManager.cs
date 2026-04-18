@@ -43,6 +43,35 @@ namespace Shared.Entities
             return TryGetEntity(entityId, out runtime);
         }
 
+        public static bool TrySpawnPlayerForClient(ulong clientId, Vector3 position, out EntityRuntime runtime)
+        {
+            runtime = null;
+
+            if (TryGetPlayerEntityForClient(clientId, out runtime))
+                return true;
+
+            return TrySpawnByKind(EntityKind.Player, position, Quaternion.identity, clientId, out runtime);
+        }
+
+        public static bool TryDespawnPlayerForClient(ulong clientId)
+        {
+            if (!TryGetPlayerEntityForClient(clientId, out var runtime) || runtime == null)
+                return false;
+
+            var netObj = runtime.GetComponent<NetworkObject>();
+            if (netObj == null)
+                return false;
+
+            if (netObj.IsSpawned)
+                netObj.Despawn(true);
+            else
+                Object.Destroy(runtime.gameObject);
+
+            RuntimeLog.Entity.Info(RuntimeLog.Code.EntityDisconnectCleanup,
+                $"Completed player entity cleanup for client {clientId}.");
+            return true;
+        }
+
         public static void GetEntitiesByKind(EntityKind kind, List<EntityRuntime> results)
         {
             if (results == null)

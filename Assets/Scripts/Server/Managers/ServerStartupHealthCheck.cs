@@ -33,7 +33,13 @@ namespace Server.Managers
             {
                 RuntimeLog.Health.Error(RuntimeLog.Code.HealthConfigIssue,
                     $"WorldGenerationManager configuration issue: {worldIssue}");
+            }
+
+            if (Object.FindFirstObjectByType<ServerEntityBootstrap>() == null)
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,
+                    $"Missing ServerEntityBootstrap in scene '{sceneName}'.");
+            }
         }
     }
-}
 }

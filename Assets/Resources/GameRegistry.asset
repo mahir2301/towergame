@@ -31,4 +31,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 057334ceb40dc8f48b4a92a954322436, type: 2}
   weaponTypes:
   - {fileID: 11400000, guid: e0f9e2b79b60c434ab8f45f7fb65711c, type: 2}
-  entityTypes: []
+  entityTypes:
+  - {fileID: 11400000, guid: 4c3830db8f7b42e0b9f0c2d045e2d73c, type: 2}

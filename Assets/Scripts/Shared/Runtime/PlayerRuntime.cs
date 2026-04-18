@@ -1,36 +1,63 @@
-using System;
 using System.Collections.Generic;
 using Shared.Data;
+using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 
 namespace Shared.Runtime
 {
+    [RequireComponent(typeof(Rigidbody))]
     public class PlayerRuntime : NetworkBehaviour
     {
+        private const float DefaultMoveSpeed = 10f;
+        private const float DefaultRotationSpeed = 12f;
+        private const float DefaultJumpHeight = 1f;
+        private const float GroundCheckDistance = 1.1f;
+        private const double MaxCommandSkewSeconds = 2.0;
+
         public static PlayerRuntime LocalPlayer { get; private set; }
-        public static event Action<PlayerRuntime> LocalPlayerSpawned;
-        public static event Action<PlayerRuntime> LocalPlayerDespawned;
 
         private readonly NetworkVariable<int> currentWeaponIndex = new(-1);
         private readonly NetworkVariable<ulong> connectedEnergyId = new(ulong.MaxValue);
         private readonly NetworkVariable<float> currentWeaponCooldown = new(0f);
+        private readonly NetworkVariable<float> networkMoveSpeed = new(0f);
 
         private readonly List<WeaponInstance> weaponInstances = new();
+        private Vector2 serverMoveInput;
+        private Vector3 serverLookTarget;
+        private bool hasLookTarget;
+        private bool serverJumpRequested;
+        private bool jumpExecuted;
+        private uint nextMoveSequence;
+        private uint nextActionSequence;
+        private uint lastMoveSequence;
+        private uint lastActionSequence;
+        private bool hasMoveSequence;
+        private bool hasActionSequence;
+
+        [SerializeField] private float moveSpeed = DefaultMoveSpeed;
+        [SerializeField] private float rotationSpeed = DefaultRotationSpeed;
+        [SerializeField] private float jumpHeight = DefaultJumpHeight;
+        [SerializeField] private LayerMask groundLayers = ~0;
+        [SerializeField] private Animator animator;
+
+        private Rigidbody rigidBody;
 
         public int CurrentWeaponIndex => currentWeaponIndex.Value;
         public ulong ConnectedEnergyId => connectedEnergyId.Value;
         public float CurrentWeaponCooldown => currentWeaponCooldown.Value;
+        public float NetworkMoveSpeed => networkMoveSpeed.Value;
         public IReadOnlyList<WeaponInstance> WeaponInstances => weaponInstances;
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
 
+            rigidBody = GetComponent<Rigidbody>();
+
             if (IsOwner)
             {
                 LocalPlayer = this;
-                LocalPlayerSpawned?.Invoke(this);
             }
 
             if (IsServer)
@@ -46,21 +73,26 @@ namespace Shared.Runtime
             if (IsOwner && LocalPlayer == this)
             {
                 LocalPlayer = null;
-                LocalPlayerDespawned?.Invoke(this);
             }
         }
 
         private void Update()
         {
-            if (!IsServer || !IsSpawned) return;
-
-            foreach (var weapon in weaponInstances)
+            if (IsServer && IsSpawned)
             {
-                weapon.TickCooldown(Time.deltaTime);
+                SimulateMovement(Time.deltaTime);
+
+                foreach (var weapon in weaponInstances)
+                {
+                    weapon.TickCooldown(Time.deltaTime);
+                }
+
+                var currentWeapon = GetCurrentWeapon();
+                currentWeaponCooldown.Value = currentWeapon?.CurrentCooldown ?? 0f;
             }
 
-            var currentWeapon = GetCurrentWeapon();
-            currentWeaponCooldown.Value = currentWeapon?.CurrentCooldown ?? 0f;
+            if (animator != null)
+                animator.SetFloat("Speed", networkMoveSpeed.Value);
         }
 
         private void InitializeWeapons()
@@ -91,40 +123,65 @@ namespace Shared.Runtime
             return weaponInstances[index];
         }
 
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void SwitchWeaponServerRpc(int index)
+        public void SubmitMoveCommand(Vector2 moveInput, Vector3 lookTarget, bool jumpRequested)
         {
-            if (!IsServer) return;
-            if (index < 0 || index >= weaponInstances.Count) return;
+            SubmitMoveCommandServerRpc(new PlayerMoveCommand
+            {
+                Sequence = ++nextMoveSequence,
+                ClientTime = GetClientCommandTime(),
+                JumpRequested = jumpRequested,
+                MoveInput = moveInput,
+                LookTarget = lookTarget,
+            });
+        }
 
-            currentWeaponIndex.Value = index;
-            GameEvents.RaiseWeaponSwitched(this, index);
+        public void SubmitFireCommand(Vector3 targetPosition)
+        {
+            SubmitActionCommandServerRpc(new PlayerActionCommand
+            {
+                Sequence = ++nextActionSequence,
+                ClientTime = GetClientCommandTime(),
+                Kind = PlayerActionKind.Fire,
+                TargetPosition = targetPosition,
+            });
+        }
+
+        public void SubmitSwitchWeaponCommand(int index)
+        {
+            SubmitActionCommandServerRpc(new PlayerActionCommand
+            {
+                Sequence = ++nextActionSequence,
+                ClientTime = GetClientCommandTime(),
+                Kind = PlayerActionKind.SwitchWeapon,
+                WeaponIndex = index,
+            });
+        }
+
+        public void SubmitConnectEnergyCommand(ulong energyId)
+        {
+            SubmitActionCommandServerRpc(new PlayerActionCommand
+            {
+                Sequence = ++nextActionSequence,
+                ClientTime = GetClientCommandTime(),
+                Kind = PlayerActionKind.ConnectEnergy,
+                EnergyId = energyId,
+            });
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void FireWeaponServerRpc(Vector3 targetPosition)
+        private void SubmitMoveCommandServerRpc(PlayerMoveCommand command, RpcParams rpcParams = default)
         {
             if (!IsServer) return;
+            if (!HasCommandAuthority(rpcParams.Receive.SenderClientId)) return;
+            if (!IsMoveCommandFresh(command)) return;
 
-            var weapon = GetCurrentWeapon();
-            if (weapon == null || !weapon.CanFire()) return;
-
-            var config = weapon.GetConfig();
-            if (config == null) return;
-
-            if (!TryConsumeEnergy(config.Stats.energyCostPerShot, config.ClassType))
-                return;
-
-            weapon.StartCooldown();
-
-            var direction = (targetPosition - transform.position).normalized;
-            direction.y = 0f;
-
-            if (direction != Vector3.zero)
-                transform.rotation = Quaternion.LookRotation(direction);
-
-            SpawnProjectile(targetPosition, config);
-            FireWeaponClientRpc(targetPosition, config.Id);
+            lastMoveSequence = command.Sequence;
+            hasMoveSequence = true;
+            serverMoveInput = Vector2.ClampMagnitude(command.MoveInput, 1f);
+            serverLookTarget = command.LookTarget;
+            hasLookTarget = true;
+            if (command.JumpRequested && !serverJumpRequested)
+                serverJumpRequested = true;
         }
 
         private void SpawnProjectile(Vector3 targetPosition, WeaponType config)
@@ -155,10 +212,67 @@ namespace Shared.Runtime
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void ConnectToEnergyServerRpc(ulong energyId)
+        private void SubmitActionCommandServerRpc(PlayerActionCommand command, RpcParams rpcParams = default)
         {
             if (!IsServer) return;
+            if (!HasCommandAuthority(rpcParams.Receive.SenderClientId)) return;
+            if (!IsActionCommandFresh(command)) return;
 
+            lastActionSequence = command.Sequence;
+            hasActionSequence = true;
+
+            switch (command.Kind)
+            {
+                case PlayerActionKind.Fire:
+                    HandleFireCommand(command.TargetPosition);
+                    return;
+                case PlayerActionKind.SwitchWeapon:
+                    HandleSwitchWeaponCommand(command.WeaponIndex);
+                    return;
+                case PlayerActionKind.ConnectEnergy:
+                    HandleConnectEnergyCommand(command.EnergyId);
+                    return;
+                default:
+                    return;
+            }
+        }
+
+        private void HandleSwitchWeaponCommand(int index)
+        {
+            if (index < 0 || index >= weaponInstances.Count)
+                return;
+
+            currentWeaponIndex.Value = index;
+            GameEvents.RaiseWeaponSwitched(this, index);
+        }
+
+        private void HandleFireCommand(Vector3 targetPosition)
+        {
+            var weapon = GetCurrentWeapon();
+            if (weapon == null || !weapon.CanFire())
+                return;
+
+            var config = weapon.GetConfig();
+            if (config == null)
+                return;
+
+            if (!TryConsumeEnergy(config.Stats.energyCostPerShot, config.ClassType))
+                return;
+
+            weapon.StartCooldown();
+
+            var direction = (targetPosition - transform.position).normalized;
+            direction.y = 0f;
+
+            if (direction != Vector3.zero)
+                transform.rotation = Quaternion.LookRotation(direction);
+
+            SpawnProjectile(targetPosition, config);
+            FireWeaponClientRpc(targetPosition, config.Id);
+        }
+
+        private void HandleConnectEnergyCommand(ulong energyId)
+        {
             if (energyId == ulong.MaxValue)
             {
                 connectedEnergyId.Value = ulong.MaxValue;
@@ -189,6 +303,105 @@ namespace Shared.Runtime
             if (!energy.HasCapacity(amount)) return false;
 
             return energy.TryConnectTower(NetworkObjectId, amount);
+        }
+
+        private void SimulateMovement(float deltaTime)
+        {
+            var currentVelocity = rigidBody.linearVelocity;
+            var movement = new Vector3(serverMoveInput.x, 0f, serverMoveInput.y);
+            if (movement.sqrMagnitude > 1f)
+                movement.Normalize();
+
+            var planarVelocity = movement * moveSpeed;
+            currentVelocity.x = planarVelocity.x;
+            currentVelocity.z = planarVelocity.z;
+            rigidBody.linearVelocity = currentVelocity;
+
+            if (hasLookTarget)
+            {
+                var lookDir = serverLookTarget - rigidBody.position;
+                lookDir.y = 0f;
+                if (lookDir.sqrMagnitude > 0.0001f)
+                {
+                    var targetRotation = Quaternion.LookRotation(lookDir);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * deltaTime);
+                }
+            }
+
+            HandleJump();
+            networkMoveSpeed.Value = movement.magnitude * moveSpeed;
+        }
+
+        private void HandleJump()
+        {
+            if (IsGrounded())
+                jumpExecuted = false;
+
+            if (!serverJumpRequested || jumpExecuted)
+                return;
+
+            serverJumpRequested = false;
+            jumpExecuted = true;
+
+            var velocity = rigidBody.linearVelocity;
+            velocity.y = Mathf.Sqrt(2f * Mathf.Abs(Physics.gravity.y) * jumpHeight);
+            rigidBody.linearVelocity = velocity;
+        }
+
+        private bool IsGrounded()
+        {
+            var origin = rigidBody.position + Vector3.up * 0.05f;
+            return Physics.Raycast(origin, Vector3.down, GroundCheckDistance, groundLayers, QueryTriggerInteraction.Ignore);
+        }
+
+        private bool HasCommandAuthority(ulong senderClientId)
+        {
+            if (senderClientId == OwnerClientId)
+                return true;
+
+            RuntimeLog.Entity.Warning(RuntimeLog.Code.EntityOwnershipRejected,
+                $"Rejected player command for netId={NetworkObjectId} from client {senderClientId}; owner is {OwnerClientId}.");
+            return false;
+        }
+
+        private bool IsMoveCommandFresh(PlayerMoveCommand command)
+        {
+            if (hasMoveSequence && !IsSequenceNewer(command.Sequence, lastMoveSequence))
+                return false;
+
+            return IsCommandTimestampValid(command.ClientTime);
+        }
+
+        private bool IsActionCommandFresh(PlayerActionCommand command)
+        {
+            if (hasActionSequence && !IsSequenceNewer(command.Sequence, lastActionSequence))
+                return false;
+
+            return IsCommandTimestampValid(command.ClientTime);
+        }
+
+        private bool IsCommandTimestampValid(double clientTime)
+        {
+            if (clientTime <= 0d)
+                return false;
+
+            var serverTime = NetworkManager.Singleton != null
+                ? NetworkManager.Singleton.ServerTime.Time
+                : Time.unscaledTimeAsDouble;
+            return Mathf.Abs((float)(serverTime - clientTime)) <= MaxCommandSkewSeconds;
+        }
+
+        private static bool IsSequenceNewer(uint next, uint previous)
+        {
+            var diff = next - previous;
+            return diff != 0 && diff < 0x80000000;
+        }
+
+        private static double GetClientCommandTime()
+        {
+            return NetworkManager.Singleton != null
+                ? NetworkManager.Singleton.LocalTime.Time
+                : Time.unscaledTimeAsDouble;
         }
     }
 }

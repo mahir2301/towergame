@@ -1,0 +1,113 @@
+using Shared.Entities;
+using Shared.Utilities;
+using Unity.Netcode;
+using UnityEngine;
+
+namespace Server.Managers
+{
+    public class ServerEntityBootstrap : MonoBehaviour
+    {
+        [SerializeField] private Vector3 initialPlayerSpawn = new(0f, 1f, 0f);
+        [SerializeField] private float spawnSpacing = 2f;
+
+        private NetworkManager networkManager;
+        private bool serverCallbacksBound;
+        private bool subscribedToServerStarted;
+
+        private void Start()
+        {
+            TryBindNetworkHooks();
+        }
+
+        private void Update()
+        {
+            if (serverCallbacksBound)
+                return;
+
+            TryBindNetworkHooks();
+        }
+
+        private void OnDestroy()
+        {
+            UnbindServerCallbacks();
+
+            if (networkManager != null && subscribedToServerStarted)
+            {
+                networkManager.OnServerStarted -= HandleServerStarted;
+                subscribedToServerStarted = false;
+            }
+        }
+
+        private void TryBindNetworkHooks()
+        {
+            networkManager = NetworkManager.Singleton;
+            if (networkManager == null)
+                return;
+
+            if (!subscribedToServerStarted)
+            {
+                networkManager.OnServerStarted += HandleServerStarted;
+                subscribedToServerStarted = true;
+            }
+
+            if (!networkManager.IsServer || !networkManager.IsListening)
+                return;
+
+            BindServerCallbacks();
+            SpawnPlayersForConnectedClients();
+        }
+
+        private void HandleServerStarted()
+        {
+            BindServerCallbacks();
+            SpawnPlayersForConnectedClients();
+        }
+
+        private void BindServerCallbacks()
+        {
+            if (networkManager == null || serverCallbacksBound)
+                return;
+
+            networkManager.OnClientConnectedCallback += HandleClientConnected;
+            networkManager.OnClientDisconnectCallback += HandleClientDisconnected;
+            serverCallbacksBound = true;
+        }
+
+        private void UnbindServerCallbacks()
+        {
+            if (networkManager == null || !serverCallbacksBound)
+                return;
+
+            networkManager.OnClientConnectedCallback -= HandleClientConnected;
+            networkManager.OnClientDisconnectCallback -= HandleClientDisconnected;
+            serverCallbacksBound = false;
+        }
+
+        private void SpawnPlayersForConnectedClients()
+        {
+            if (networkManager == null)
+                return;
+
+            var clients = networkManager.ConnectedClientsIds;
+            for (var i = 0; i < clients.Count; i++)
+            {
+                HandleClientConnected(clients[i]);
+            }
+        }
+
+        private void HandleClientConnected(ulong clientId)
+        {
+            var spawnPos = initialPlayerSpawn + Vector3.right * (spawnSpacing * clientId);
+            if (EntityManager.TrySpawnPlayerForClient(clientId, spawnPos, out _))
+                return;
+
+            RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
+                $"Failed to spawn player entity for client {clientId}.");
+        }
+
+        private void HandleClientDisconnected(ulong clientId)
+        {
+            EntityManager.TryDespawnPlayerForClient(clientId);
+        }
+    }
+}

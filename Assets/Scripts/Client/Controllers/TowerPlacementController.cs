@@ -145,6 +145,17 @@ namespace Client.Controllers
             if (!context.performed)
                 return;
 
+            TryPlaceTower();
+        }
+
+        public void TryPlaceTower()
+        {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
+                return;
+
+            if (!RuntimeBootstrap.IsReady)
+                return;
+
             if (currentGridPos is null || currentTowerConfig == null)
                 return;
 
