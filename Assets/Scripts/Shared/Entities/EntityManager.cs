@@ -48,7 +48,11 @@ namespace Shared.Entities
             runtime = null;
 
             if (TryGetPlayerEntityForClient(clientId, out runtime))
-                return true;
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
+                    $"Cannot spawn player entity for client {clientId}: an entity is already registered (id={runtime.EntityId}).");
+                return false;
+            }
 
             return TrySpawnByKind(EntityKind.Player, position, Quaternion.identity, clientId, out runtime);
         }
@@ -241,7 +245,7 @@ namespace Shared.Entities
             runtime = Object.Instantiate(type.Prefab, position, rotation);
             runtime.ConfigureServerMetadata(type.Id, type.Kind, ownerClientId);
 
-            if (!runtime.HasConfiguredMetadata(out var metadataIssue))
+            if (!runtime.HasConfiguredSpawnMetadata(out var metadataIssue))
             {
                 RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
                     $"Cannot spawn entity '{type.Id}' because runtime metadata is invalid: {metadataIssue}");

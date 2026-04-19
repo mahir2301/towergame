@@ -25,12 +25,6 @@ namespace Client.Controllers
             GameEvents.EntityOwnerAssigned -= HandleEntityOwnerAssigned;
         }
 
-        private void Update()
-        {
-            if (CurrentPlayer == null)
-                TryResolve();
-        }
-
         private void HandleEntityChanged(EntityRuntime _)
         {
             TryResolve();
@@ -53,26 +47,11 @@ namespace Client.Controllers
             if (!EntityManager.TryGetPlayerEntityForClient(networkManager.LocalClientId, out var entityRuntime)
                 || entityRuntime == null)
             {
-                CurrentPlayer = ResolveOwnerPlayerFallback();
+                CurrentPlayer = null;
                 return;
             }
 
             CurrentPlayer = entityRuntime.GetComponent<PlayerRuntime>();
-            if (CurrentPlayer == null)
-                CurrentPlayer = ResolveOwnerPlayerFallback();
-        }
-
-        private static PlayerRuntime ResolveOwnerPlayerFallback()
-        {
-            var allPlayers = FindObjectsByType<PlayerRuntime>(FindObjectsSortMode.None);
-            for (var i = 0; i < allPlayers.Length; i++)
-            {
-                var player = allPlayers[i];
-                if (player != null && player.IsOwner && player.IsSpawned)
-                    return player;
-            }
-
-            return null;
         }
     }
 }

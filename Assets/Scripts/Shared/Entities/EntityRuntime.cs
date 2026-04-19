@@ -48,7 +48,8 @@ namespace Shared.Entities
 
         public void ConfigureServerMetadata(string typeId, EntityKind entityKind, ulong ownerId)
         {
-            if (!IsServer)
+            var networkManager = NetworkManager.Singleton;
+            if (networkManager == null || !networkManager.IsServer)
                 return;
 
             entityTypeId.Value = typeId;
@@ -64,6 +65,24 @@ namespace Shared.Entities
                 return false;
             }
 
+            if (string.IsNullOrEmpty(EntityTypeId))
+            {
+                issue = "EntityTypeId is empty.";
+                return false;
+            }
+
+            if (Kind == EntityKind.Unknown)
+            {
+                issue = "Kind is Unknown.";
+                return false;
+            }
+
+            issue = null;
+            return true;
+        }
+
+        internal bool HasConfiguredSpawnMetadata(out string issue)
+        {
             if (string.IsNullOrEmpty(EntityTypeId))
             {
                 issue = "EntityTypeId is empty.";

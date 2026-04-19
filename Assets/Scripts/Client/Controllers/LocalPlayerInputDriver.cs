@@ -34,9 +34,6 @@ namespace Client.Controllers
 
         private void Start()
         {
-            if (playerResolver == null)
-                playerResolver = GetComponent<LocalPlayerEntityResolver>();
-
             if (cinemachineCamera != null)
                 targetZoom = cinemachineCamera.Lens.OrthographicSize;
         }
@@ -171,9 +168,9 @@ namespace Client.Controllers
                 return false;
             }
 
-            if (playerResolver == null && GetComponent<LocalPlayerEntityResolver>() == null)
+            if (playerResolver == null)
             {
-                issue = "playerResolver is missing and no LocalPlayerEntityResolver exists on this GameObject.";
+                issue = "playerResolver is not assigned.";
                 return false;
             }
 

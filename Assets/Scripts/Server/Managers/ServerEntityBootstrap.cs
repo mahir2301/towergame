@@ -16,15 +16,12 @@ namespace Server.Managers
 
         private void Start()
         {
-            TryBindNetworkHooks();
-        }
-
-        private void Update()
-        {
-            if (serverCallbacksBound)
-                return;
-
-            TryBindNetworkHooks();
+            if (!TryBindNetworkHooks())
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,
+                    "ServerEntityBootstrap requires NetworkManager.Singleton at startup.");
+                enabled = false;
+            }
         }
 
         private void OnDestroy()
@@ -38,11 +35,11 @@ namespace Server.Managers
             }
         }
 
-        private void TryBindNetworkHooks()
+        private bool TryBindNetworkHooks()
         {
             networkManager = NetworkManager.Singleton;
             if (networkManager == null)
-                return;
+                return false;
 
             if (!subscribedToServerStarted)
             {
@@ -51,10 +48,11 @@ namespace Server.Managers
             }
 
             if (!networkManager.IsServer || !networkManager.IsListening)
-                return;
+                return true;
 
             BindServerCallbacks();
             SpawnPlayersForConnectedClients();
+            return true;
         }
 
         private void HandleServerStarted()

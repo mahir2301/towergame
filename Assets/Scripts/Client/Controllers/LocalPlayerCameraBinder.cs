@@ -10,12 +10,6 @@ namespace Client.Controllers
 
         private Transform currentTarget;
 
-        private void Awake()
-        {
-            if (playerResolver == null)
-                playerResolver = GetComponent<LocalPlayerEntityResolver>();
-        }
-
         private void Update()
         {
             var player = playerResolver != null ? playerResolver.CurrentPlayer : null;
@@ -38,9 +32,9 @@ namespace Client.Controllers
                 return false;
             }
 
-            if (playerResolver == null && GetComponent<LocalPlayerEntityResolver>() == null)
+            if (playerResolver == null)
             {
-                issue = "playerResolver is missing and no LocalPlayerEntityResolver exists on this GameObject.";
+                issue = "playerResolver is not assigned.";
                 return false;
             }
 

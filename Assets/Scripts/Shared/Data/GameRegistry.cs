@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System;
 using Shared.Entities;
 using UnityEngine;
 
@@ -50,7 +51,12 @@ namespace Shared.Data
                 if (item == null) continue;
                 var id = item.Id;
                 if (!string.IsNullOrEmpty(id))
+                {
+                    if (lookup.TryGetValue(id, out var existing) && existing != item)
+                        throw new InvalidOperationException($"Duplicate registry id '{id}' detected while building {typeof(T).Name} lookup.");
+
                     lookup[id] = item;
+                }
             }
             return lookup;
         }
@@ -64,8 +70,10 @@ namespace Shared.Data
                 if (type == null || type.Kind == EntityKind.Unknown)
                     continue;
 
-                if (!lookup.ContainsKey(type.Kind))
-                    lookup[type.Kind] = type;
+                if (lookup.TryGetValue(type.Kind, out var existing) && existing != type)
+                    throw new InvalidOperationException($"Duplicate EntityType kind '{type.Kind}' detected while building EntityKind lookup.");
+
+                lookup[type.Kind] = type;
             }
 
             return lookup;
