@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Shared.Data
 {
     [CreateAssetMenu(fileName = "EntityType", menuName = "towergame/Entity Type")]
-    public class EntityType : ScriptableObject
+    public class EntityType : ScriptableObject, IRegistryType
     {
         [SerializeField] private string id;
         [SerializeField] private string displayName;

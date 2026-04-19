@@ -148,40 +148,25 @@ namespace Shared.Entities
             return TrySpawn(type, position, rotation, ownerClientId, out runtime);
         }
 
-        internal static void RegisterRuntime(EntityRuntime runtime)
+        internal static bool TryRegisterRuntime(EntityRuntime runtime)
         {
             if (runtime == null)
-                return;
+                return false;
 
             if (runtime.IsServer && !runtime.EntityId.IsValid)
                 runtime.AssignServerEntityId(AllocateEntityId());
 
-            if (!runtime.EntityId.IsValid)
+            if (!TryValidateRuntimeForRegistration(runtime, out var type, out var issue, out var code))
             {
-                RuntimeLog.Entity.Error(RuntimeLog.Code.EntityMissingForCommand,
-                    $"Rejected registration for '{runtime.name}' because EntityId is invalid.");
-                return;
+                RuntimeLog.Entity.Error(code, issue);
+                return false;
             }
 
-            if (string.IsNullOrEmpty(runtime.EntityTypeId))
-            {
-                RuntimeLog.Entity.Error(RuntimeLog.Code.EntityMissingTypeId,
-                    $"Rejected registration for entity id={runtime.EntityId}: EntityTypeId is required.");
-                return;
-            }
-
-            if (!TryGetEntityType(runtime, out var type))
-            {
-                RuntimeLog.Entity.Error(RuntimeLog.Code.EntityMissingTypeDefinition,
-                    $"Rejected registration for entity id={runtime.EntityId}: missing EntityType '{runtime.EntityTypeId}'.");
-                return;
-            }
-
-            if (runtime.Kind != type.Kind)
+            if (entitiesById.TryGetValue(runtime.EntityId.Value, out var existing) && existing != runtime)
             {
                 RuntimeLog.Entity.Error(RuntimeLog.Code.EntityInvalidCommandPayload,
-                    $"Rejected registration for entity id={runtime.EntityId}: kind '{runtime.Kind}' does not match type '{type.Id}' kind '{type.Kind}'.");
-                return;
+                    $"Rejected registration for entity id={runtime.EntityId}: duplicate id already registered by '{existing.name}'.");
+                return false;
             }
 
             entitiesById[runtime.EntityId.Value] = runtime;
@@ -199,6 +184,7 @@ namespace Shared.Entities
             RuntimeLog.Entity.Info(RuntimeLog.Code.EntitySpawned,
                 $"Registered entity id={runtime.EntityId} kind={runtime.Kind} owner={runtime.EntityOwnerClientId}.");
             GameEvents.RaiseEntitySpawned(runtime);
+            return true;
         }
 
         internal static void UnregisterRuntime(EntityRuntime runtime)
@@ -255,6 +241,15 @@ namespace Shared.Entities
             runtime = Object.Instantiate(type.Prefab, position, rotation);
             runtime.ConfigureServerMetadata(type.Id, type.Kind, ownerClientId);
 
+            if (!runtime.HasConfiguredMetadata(out var metadataIssue))
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
+                    $"Cannot spawn entity '{type.Id}' because runtime metadata is invalid: {metadataIssue}");
+                Object.Destroy(runtime.gameObject);
+                runtime = null;
+                return false;
+            }
+
             var networkObject = runtime.GetComponent<NetworkObject>();
             if (networkObject == null)
             {
@@ -269,6 +264,40 @@ namespace Shared.Entities
                 networkObject.Spawn();
             else
                 networkObject.SpawnWithOwnership(ownerClientId);
+
+            return true;
+        }
+
+        private static bool TryValidateRuntimeForRegistration(EntityRuntime runtime, out EntityType type,
+            out string issue, out string code)
+        {
+            type = null;
+            issue = null;
+            code = null;
+
+            if (!runtime.HasConfiguredMetadata(out var metadataIssue))
+            {
+                issue = $"Rejected registration for '{runtime.name}': {metadataIssue}";
+                code = metadataIssue.Contains("EntityTypeId")
+                    ? RuntimeLog.Code.EntityMissingTypeId
+                    : RuntimeLog.Code.EntityMissingForCommand;
+                return false;
+            }
+
+            if (!TryGetEntityType(runtime, out type))
+            {
+                issue = $"Rejected registration for entity id={runtime.EntityId}: missing EntityType '{runtime.EntityTypeId}'.";
+                code = RuntimeLog.Code.EntityMissingTypeDefinition;
+                return false;
+            }
+
+            if (runtime.Kind != type.Kind)
+            {
+                issue =
+                    $"Rejected registration for entity id={runtime.EntityId}: kind '{runtime.Kind}' does not match type '{type.Id}' kind '{type.Kind}'.";
+                code = RuntimeLog.Code.EntityInvalidCommandPayload;
+                return false;
+            }
 
             return true;
         }

@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Shared.Data
 {
     [CreateAssetMenu(fileName = "WeaponType", menuName = "towergame/Weapon Type")]
-    public class WeaponType : ScriptableObject
+    public class WeaponType : ScriptableObject, IRegistryType
     {
         [Header("Identity")]
         [SerializeField] private string id;

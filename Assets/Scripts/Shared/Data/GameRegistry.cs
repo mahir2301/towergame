@@ -41,13 +41,14 @@ namespace Shared.Data
             _entityKindLookup = BuildEntityKindLookup(entityTypes);
         }
 
-        private static Dictionary<string, T> BuildLookup<T>(List<T> items) where T : ScriptableObject
+        private static Dictionary<string, T> BuildLookup<T>(List<T> items) where T : ScriptableObject, IRegistryType
         {
             var lookup = new Dictionary<string, T>(items.Count, System.StringComparer.Ordinal);
-            foreach (var item in items)
+            for (var i = 0; i < items.Count; i++)
             {
+                var item = items[i];
                 if (item == null) continue;
-                var id = GetId(item);
+                var id = item.Id;
                 if (!string.IsNullOrEmpty(id))
                     lookup[id] = item;
             }
@@ -68,19 +69,6 @@ namespace Shared.Data
             }
 
             return lookup;
-        }
-
-        private static string GetId(ScriptableObject so)
-        {
-            return so switch
-            {
-                TowerType t => t.Id,
-                EnergyType e => e.Id,
-                ClassType c => c.Id,
-                WeaponType w => w.Id,
-                EntityType et => et.Id,
-                _ => null
-            };
         }
 
         public TowerType GetTowerType(string id)
@@ -200,7 +188,6 @@ namespace Shared.Data
                 towerTypes,
                 "TowerTypes",
                 "TowerType",
-                GetId,
                 (TowerType type, out string localIssue) =>
                 {
                     if (type.Prefab == null)
@@ -233,7 +220,6 @@ namespace Shared.Data
                 energyTypes,
                 "EnergyTypes",
                 "EnergyType",
-                GetId,
                 (EnergyType type, out string localIssue) =>
                 {
                     if (type.Prefab == null)
@@ -260,7 +246,6 @@ namespace Shared.Data
                 classTypes,
                 "ClassTypes",
                 "ClassType",
-                GetId,
                 (ClassType type, out string localIssue) =>
                 {
                     var compatibleEnergyTypes = type.CompatibleEnergyTypes;
@@ -291,7 +276,6 @@ namespace Shared.Data
                 weaponTypes,
                 "WeaponTypes",
                 "WeaponType",
-                GetId,
                 (WeaponType type, out string localIssue) =>
                 {
                     if (type.ClassType == null)
@@ -312,7 +296,6 @@ namespace Shared.Data
                     entityTypes,
                     "EntityTypes",
                     "EntityType",
-                    GetId,
                     (EntityType type, out string localIssue) =>
                     {
                         if (type.Kind == EntityKind.Unknown)
@@ -324,6 +307,12 @@ namespace Shared.Data
                         if (type.Prefab == null)
                         {
                             localIssue = $"EntityType '{type.Id}' is missing a prefab.";
+                            return false;
+                        }
+
+                        if (type.Prefab.GetComponent<EntityRuntime>() == null)
+                        {
+                            localIssue = $"EntityType '{type.Id}' prefab does not include EntityRuntime.";
                             return false;
                         }
 
@@ -354,8 +343,8 @@ namespace Shared.Data
         }
 
         private bool ValidateTypeList<T>(List<T> items, string listName, string typeName,
-            System.Func<T, string> getId, ValidationRule<T> validationRule, out string issue)
-            where T : ScriptableObject
+            ValidationRule<T> validationRule, out string issue)
+            where T : ScriptableObject, IRegistryType
         {
             EnsureInitialized();
 
@@ -369,7 +358,7 @@ namespace Shared.Data
                     return false;
                 }
 
-                var id = getId(item);
+                var id = item.Id;
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     issue = $"{typeName} '{item.name}' has an empty id.";

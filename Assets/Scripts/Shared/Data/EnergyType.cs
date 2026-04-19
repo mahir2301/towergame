@@ -3,7 +3,7 @@
 namespace Shared.Data
 {
     [CreateAssetMenu(fileName = "EnergyType", menuName = "towergame/Energy Type")]
-    public class EnergyType : ScriptableObject
+    public class EnergyType : ScriptableObject, IRegistryType
     {
         [SerializeField]
         private string id;

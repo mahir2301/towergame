@@ -1,4 +1,3 @@
-using Shared.Data;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -9,9 +8,6 @@ namespace Shared.Entities
     [RequireComponent(typeof(NetworkObject))]
     public class EntityRuntime : NetworkBehaviour
     {
-        [SerializeField] private EntityKind defaultKind = EntityKind.Unknown;
-        [SerializeField] private string defaultEntityTypeId;
-
         private readonly NetworkVariable<uint> entityId = new(EntityId.InvalidValue,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         private readonly NetworkVariable<EntityKind> kind = new(EntityKind.Unknown,
@@ -30,10 +26,18 @@ namespace Shared.Entities
         {
             base.OnNetworkSpawn();
 
-            if (IsServer)
-                EnsureServerMetadata();
+            if (!EntityManager.TryRegisterRuntime(this))
+            {
+                if (IsServer)
+                {
+                    if (NetworkObject != null && NetworkObject.IsSpawned)
+                        NetworkObject.Despawn(true);
+                    else
+                        Destroy(gameObject);
+                }
 
-            EntityManager.RegisterRuntime(this);
+                enabled = false;
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -52,31 +56,36 @@ namespace Shared.Entities
             ownerClientId.Value = ownerId;
         }
 
+        internal bool HasConfiguredMetadata(out string issue)
+        {
+            if (!EntityId.IsValid)
+            {
+                issue = "EntityId is invalid.";
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(EntityTypeId))
+            {
+                issue = "EntityTypeId is empty.";
+                return false;
+            }
+
+            if (Kind == EntityKind.Unknown)
+            {
+                issue = "Kind is Unknown.";
+                return false;
+            }
+
+            issue = null;
+            return true;
+        }
+
         internal void AssignServerEntityId(EntityId id)
         {
             if (!IsServer || !id.IsValid)
                 return;
 
             entityId.Value = id.Value;
-        }
-
-        private void EnsureServerMetadata()
-        {
-            if (entityTypeId.Value.Length == 0 && !string.IsNullOrWhiteSpace(defaultEntityTypeId))
-                entityTypeId.Value = defaultEntityTypeId;
-
-            var registry = GameRegistry.Instance;
-            if (entityTypeId.Value.Length > 0 && registry != null)
-            {
-                var type = registry.GetEntityType(entityTypeId.Value.ToString());
-                if (type != null)
-                {
-                    kind.Value = type.Kind;
-                }
-            }
-
-            if (kind.Value == EntityKind.Unknown && defaultKind != EntityKind.Unknown)
-                kind.Value = defaultKind;
         }
     }
 }
