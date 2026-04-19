@@ -1,0 +1,64 @@
+using Shared.Utilities;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+namespace Client.Controllers
+{
+    public static class ClientStartupHealthCheck
+    {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void Run()
+        {
+            var sceneName = SceneManager.GetActiveScene().name;
+
+            var networkManager = NetworkManager.Singleton;
+            if (networkManager != null && networkManager.IsListening && !networkManager.IsClient)
+                return;
+
+            var hasError = false;
+
+            var resolver = Object.FindFirstObjectByType<LocalPlayerEntityResolver>();
+            if (resolver == null)
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,
+                    $"Missing LocalPlayerEntityResolver in scene '{sceneName}'.");
+                hasError = true;
+            }
+
+            var inputDriver = Object.FindFirstObjectByType<LocalPlayerInputDriver>();
+            if (inputDriver == null)
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,
+                    $"Missing LocalPlayerInputDriver in scene '{sceneName}'.");
+                hasError = true;
+            }
+            else if (!inputDriver.HasRequiredReferences(out var inputIssue))
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthConfigIssue,
+                    $"LocalPlayerInputDriver configuration issue: {inputIssue}");
+                hasError = true;
+            }
+
+            var cameraBinder = Object.FindFirstObjectByType<LocalPlayerCameraBinder>();
+            if (cameraBinder == null)
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,
+                    $"Missing LocalPlayerCameraBinder in scene '{sceneName}'.");
+                hasError = true;
+            }
+            else if (!cameraBinder.HasRequiredReferences(out var cameraIssue))
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthConfigIssue,
+                    $"LocalPlayerCameraBinder configuration issue: {cameraIssue}");
+                hasError = true;
+            }
+
+            if (!hasError)
+            {
+                RuntimeLog.Health.Info(RuntimeLog.Code.HealthStartupOk,
+                    $"Client startup checks passed for scene '{sceneName}'.");
+            }
+        }
+    }
+}

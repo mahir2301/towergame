@@ -17,8 +17,6 @@ namespace Shared.Runtime
         private const float GroundCheckDistance = 1.1f;
         private const double MaxCommandSkewSeconds = 2.0;
 
-        public static PlayerRuntime LocalPlayer { get; private set; }
-
         private readonly NetworkVariable<int> currentWeaponIndex = new(-1);
         private readonly NetworkVariable<ulong> connectedEnergyId = new(ulong.MaxValue);
         private readonly NetworkVariable<float> currentWeaponCooldown = new(0f);
@@ -57,11 +55,6 @@ namespace Shared.Runtime
 
             rigidBody = GetComponent<Rigidbody>();
 
-            if (IsOwner)
-            {
-                LocalPlayer = this;
-            }
-
             if (IsServer)
             {
                 InitializeWeapons();
@@ -71,11 +64,6 @@ namespace Shared.Runtime
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-
-            if (IsOwner && LocalPlayer == this)
-            {
-                LocalPlayer = null;
-            }
         }
 
         private void Update()

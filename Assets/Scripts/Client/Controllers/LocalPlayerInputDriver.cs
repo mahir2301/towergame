@@ -12,9 +12,10 @@ namespace Client.Controllers
         [SerializeField] private Camera mainCamera;
         [SerializeField] private CinemachineCamera cinemachineCamera;
         [SerializeField] private TowerPlacementController placementController;
+        [SerializeField] private LocalPlayerEntityResolver playerResolver;
         [SerializeField] private float zoomMin = 3f;
         [SerializeField] private float zoomMax = 12f;
-        [SerializeField] private float zoomSensitivity = 0.5f;
+        [SerializeField] private float zoomSensitivity = 50f;
         [SerializeField] private float zoomAcceleration = 10f;
 
         private readonly Matrix4x4 isoMatrix = Matrix4x4.Rotate(Quaternion.Euler(0f, 45f, 0f));
@@ -33,6 +34,9 @@ namespace Client.Controllers
 
         private void Start()
         {
+            if (playerResolver == null)
+                playerResolver = GetComponent<LocalPlayerEntityResolver>();
+
             if (cinemachineCamera != null)
                 targetZoom = cinemachineCamera.Lens.OrthographicSize;
         }
@@ -41,8 +45,13 @@ namespace Client.Controllers
         {
             var keyboard = Keyboard.current;
             var mouse = Mouse.current;
-            var player = PlayerRuntime.LocalPlayer;
-            if (keyboard == null || mouse == null || mainCamera == null || player == null)
+            if (keyboard == null || mouse == null || mainCamera == null)
+                return;
+
+            HandleZoom(mouse);
+
+            var player = playerResolver != null ? playerResolver.CurrentPlayer : null;
+            if (player == null)
                 return;
 
             if (keyboard.spaceKey.wasPressedThisFrame)
@@ -53,7 +62,6 @@ namespace Client.Controllers
             player.SubmitMoveCommand(move, lookTarget, jumpPressedThisFrame);
             jumpPressedThisFrame = false;
 
-            HandleZoom(mouse);
             HandleActions(keyboard, mouse, player, lookTarget);
         }
 
@@ -133,14 +141,44 @@ namespace Client.Controllers
                 player.SubmitSwitchWeaponCommand(2);
         }
 
-        private static void HandlePlayerActionResultReceived(PlayerRuntime player, PlayerActionKind actionKind,
+        private static void HandlePlayerActionResultReceived(PlayerRuntime _, PlayerActionKind actionKind,
             PlayerActionResult result)
         {
-            if (player != PlayerRuntime.LocalPlayer || result == PlayerActionResult.Accepted)
+            if (result == PlayerActionResult.Accepted)
                 return;
 
             RuntimeLog.Entity.Warning(RuntimeLog.Code.EntityActionRejected,
                 $"Server rejected action {actionKind}: {result}.");
+        }
+
+        public bool HasRequiredReferences(out string issue)
+        {
+            if (mainCamera == null)
+            {
+                issue = "mainCamera is not assigned.";
+                return false;
+            }
+
+            if (cinemachineCamera == null)
+            {
+                issue = "cinemachineCamera is not assigned.";
+                return false;
+            }
+
+            if (placementController == null)
+            {
+                issue = "placementController is not assigned.";
+                return false;
+            }
+
+            if (playerResolver == null && GetComponent<LocalPlayerEntityResolver>() == null)
+            {
+                issue = "playerResolver is missing and no LocalPlayerEntityResolver exists on this GameObject.";
+                return false;
+            }
+
+            issue = null;
+            return true;
         }
     }
 }
