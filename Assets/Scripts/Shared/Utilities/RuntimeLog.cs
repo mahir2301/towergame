@@ -30,6 +30,7 @@ namespace Shared.Utilities
             public const string WaterRebuilt = "WT-001";
             public const string WaterMissingGrid = "WT-002";
             public const string WaterMissingMaterial = "WT-003";
+            public const string WaterMissingState = "WT-004";
             public const string HealthMissingDependency = "HL-001";
             public const string HealthConfigIssue = "HL-002";
             public const string HealthStartupOk = "HL-003";

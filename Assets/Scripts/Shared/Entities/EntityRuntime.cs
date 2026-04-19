@@ -8,6 +8,11 @@ namespace Shared.Entities
     [RequireComponent(typeof(NetworkObject))]
     public class EntityRuntime : NetworkBehaviour
     {
+        private string pendingTypeId;
+        private EntityKind pendingKind = EntityKind.Unknown;
+        private ulong pendingOwnerClientId = ulong.MaxValue;
+        private bool hasPendingMetadata;
+
         private readonly NetworkVariable<uint> entityId = new(EntityId.InvalidValue,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         private readonly NetworkVariable<EntityKind> kind = new(EntityKind.Unknown,
@@ -25,6 +30,14 @@ namespace Shared.Entities
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
+            if (IsServer && hasPendingMetadata)
+            {
+                entityTypeId.Value = pendingTypeId;
+                kind.Value = pendingKind;
+                ownerClientId.Value = pendingOwnerClientId;
+                hasPendingMetadata = false;
+            }
 
             if (!EntityManager.TryRegisterRuntime(this))
             {
@@ -52,9 +65,18 @@ namespace Shared.Entities
             if (networkManager == null || !networkManager.IsServer)
                 return;
 
+            pendingTypeId = typeId;
+            pendingKind = entityKind;
+            pendingOwnerClientId = ownerId;
+            hasPendingMetadata = true;
+
+            if (!IsSpawned)
+                return;
+
             entityTypeId.Value = typeId;
             kind.Value = entityKind;
             ownerClientId.Value = ownerId;
+            hasPendingMetadata = false;
         }
 
         internal bool HasConfiguredMetadata(out string issue)
@@ -83,13 +105,16 @@ namespace Shared.Entities
 
         internal bool HasConfiguredSpawnMetadata(out string issue)
         {
-            if (string.IsNullOrEmpty(EntityTypeId))
+            var configuredTypeId = hasPendingMetadata ? pendingTypeId : EntityTypeId;
+            var configuredKind = hasPendingMetadata ? pendingKind : Kind;
+
+            if (string.IsNullOrEmpty(configuredTypeId))
             {
                 issue = "EntityTypeId is empty.";
                 return false;
             }
 
-            if (Kind == EntityKind.Unknown)
+            if (configuredKind == EntityKind.Unknown)
             {
                 issue = "Kind is Unknown.";
                 return false;

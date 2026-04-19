@@ -24,9 +24,28 @@ namespace Server.Managers
                 return;
             }
             Instance = this;
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+
+            if (!IsServer || subscribedToPlacementRequests)
+                return;
 
             TowerSpawnSystem.OnServerPlaceRequested += HandlePlaceRequested;
             subscribedToPlacementRequests = true;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+
+            if (!subscribedToPlacementRequests)
+                return;
+
+            TowerSpawnSystem.OnServerPlaceRequested -= HandlePlaceRequested;
+            subscribedToPlacementRequests = false;
         }
 
         public override void OnDestroy()

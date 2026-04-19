@@ -1,3 +1,4 @@
+using Client.Visuals;
 using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
@@ -51,6 +52,20 @@ namespace Client.Controllers
             {
                 RuntimeLog.Health.Error(RuntimeLog.Code.HealthConfigIssue,
                     $"LocalPlayerCameraBinder configuration issue: {cameraIssue}");
+                hasError = true;
+            }
+
+            var terrainRenderer = Object.FindFirstObjectByType<ClientWorldTerrainRenderer>();
+            if (terrainRenderer == null)
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,
+                    $"Missing ClientWorldTerrainRenderer in scene '{sceneName}'.");
+                hasError = true;
+            }
+            else if (!terrainRenderer.HasRequiredReferences(out var terrainIssue))
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthConfigIssue,
+                    $"ClientWorldTerrainRenderer configuration issue: {terrainIssue}");
                 hasError = true;
             }
 

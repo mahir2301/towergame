@@ -21,7 +21,7 @@ namespace Client.Visuals
         private float lastAppliedWaterThreshold = float.NaN;
         private float lastAppliedWaterNoiseScale = float.NaN;
         private int lastAppliedWaterSmoothPasses = int.MinValue;
-        private bool subscribedToSeed;
+        private bool subscribedToState;
 
         private void OnEnable()
         {
@@ -34,32 +34,26 @@ namespace Client.Visuals
                 return;
 
             if (!EnsureStateReference())
+            {
+                RuntimeLog.Water.Error(RuntimeLog.Code.WaterMissingState,
+                    "ClientWorldTerrainRenderer requires a WorldGenerationState reference.");
+                enabled = false;
                 return;
+            }
 
-            SubscribeToSeedChange();
-            TryApplyTerrainFromState();
-        }
-
-        private void Update()
-        {
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
-                return;
-
-            if (!EnsureStateReference())
-                return;
-
+            SubscribeToStateChanges();
             TryApplyTerrainFromState();
         }
 
         private void OnDestroy()
         {
-            UnsubscribeFromSeedChange();
+            UnsubscribeFromStateChanges();
 
             if (waterMeshObject != null)
                 Destroy(waterMeshObject);
         }
 
-        private void OnSeedChanged(int previousValue, int newValue)
+        private void OnWorldStateChanged()
         {
             TryApplyTerrainFromState();
         }
@@ -73,26 +67,25 @@ namespace Client.Visuals
             if (worldGenerationState == null)
                 return false;
 
-            SubscribeToSeedChange();
             return true;
         }
 
-        private void SubscribeToSeedChange()
+        private void SubscribeToStateChanges()
         {
-            if (subscribedToSeed || worldGenerationState == null)
+            if (subscribedToState || worldGenerationState == null)
                 return;
 
-            worldGenerationState.Seed.OnValueChanged += OnSeedChanged;
-            subscribedToSeed = true;
+            worldGenerationState.SubscribeStateChanged(OnWorldStateChanged, replayCurrentState: true);
+            subscribedToState = true;
         }
 
-        private void UnsubscribeFromSeedChange()
+        private void UnsubscribeFromStateChanges()
         {
-            if (!subscribedToSeed || worldGenerationState == null)
+            if (!subscribedToState || worldGenerationState == null)
                 return;
 
-            worldGenerationState.Seed.OnValueChanged -= OnSeedChanged;
-            subscribedToSeed = false;
+            worldGenerationState.UnsubscribeStateChanged(OnWorldStateChanged);
+            subscribedToState = false;
         }
 
         private void TryApplyTerrainFromState()
@@ -170,6 +163,7 @@ namespace Client.Visuals
             var meshRenderer = waterMeshObject.AddComponent<MeshRenderer>();
 
             var waterMat = new Material(waterMaterial);
+            waterMat.SetInt("_Cull", 0);
             waterMat.renderQueue = 2001;
             meshRenderer.sharedMaterial = waterMat;
 
@@ -193,6 +187,24 @@ namespace Client.Visuals
             lastAppliedWaterThreshold = float.NaN;
             lastAppliedWaterNoiseScale = float.NaN;
             lastAppliedWaterSmoothPasses = int.MinValue;
+        }
+
+        public bool HasRequiredReferences(out string issue)
+        {
+            if (worldGenerationState == null)
+            {
+                issue = "worldGenerationState is not assigned.";
+                return false;
+            }
+
+            if (waterMaterial == null)
+            {
+                issue = "waterMaterial is not assigned.";
+                return false;
+            }
+
+            issue = null;
+            return true;
         }
 
         private static Mesh BuildWaterMesh(HashSet<Vector2Int> waterCells)
