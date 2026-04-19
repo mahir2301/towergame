@@ -1,4 +1,5 @@
 using Shared.Utilities;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -39,6 +40,13 @@ namespace Server.Managers
             {
                 RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,
                     $"Missing ServerEntityBootstrap in scene '{sceneName}'.");
+            }
+
+            var networkManager = NetworkManager.Singleton;
+            if (networkManager != null && networkManager.NetworkConfig != null && networkManager.NetworkConfig.PlayerPrefab != null)
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthConfigIssue,
+                    "NetworkManager.NetworkConfig.PlayerPrefab must be null; player spawning is server-managed by ServerEntityBootstrap.");
             }
         }
     }

@@ -37,8 +37,6 @@ namespace Shared.Runtime
             spawnTime = Time.time;
 
             transform.rotation = Quaternion.LookRotation(direction);
-
-            GameEvents.RaiseProjectileSpawned(this);
         }
 
         private void Update()
@@ -60,7 +58,6 @@ namespace Shared.Runtime
                 if (tower != null)
                 {
                     tower.TakeDamageServerRpc(damage);
-                    GameEvents.RaiseProjectileHitTower(this, tower);
                 }
 
                 Despawn();
@@ -74,8 +71,6 @@ namespace Shared.Runtime
         public void Despawn()
         {
             if (!IsServer || !IsSpawned) return;
-
-            GameEvents.RaiseProjectileDespawned(this);
             NetworkObject.Despawn();
         }
     }

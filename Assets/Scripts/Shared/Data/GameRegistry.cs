@@ -167,6 +167,29 @@ namespace Shared.Data
             if (!ValidateEntityTypes(out issue))
                 return false;
 
+            if (!ValidateRequiredEntityKinds(out issue))
+                return false;
+
+            issue = null;
+            return true;
+        }
+
+        public bool ValidateRequiredEntityKinds(out string issue)
+        {
+            EnsureInitialized();
+
+            if (GetEntityType(EntityKind.Player) == null)
+            {
+                issue = "Missing required EntityType for kind Player.";
+                return false;
+            }
+
+            if (GetEntityType(EntityKind.Projectile) == null)
+            {
+                issue = "Missing required EntityType for kind Projectile.";
+                return false;
+            }
+
             issue = null;
             return true;
         }
@@ -271,12 +294,6 @@ namespace Shared.Data
                 GetId,
                 (WeaponType type, out string localIssue) =>
                 {
-                    if (type.ProjectilePrefab == null)
-                    {
-                        localIssue = $"WeaponType '{type.Id}' is missing a projectile prefab.";
-                        return false;
-                    }
-
                     if (type.ClassType == null)
                     {
                         localIssue = $"WeaponType '{type.Id}' is missing a class type.";

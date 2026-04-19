@@ -11,7 +11,6 @@ namespace Shared.Data
 
         [Header("Classification")]
         [SerializeField] private ClassType classType;
-        [SerializeField] private GameObject projectilePrefab;
 
         [Header("Stats")]
         [SerializeField] private WeaponStats stats;
@@ -19,7 +18,6 @@ namespace Shared.Data
         public string Id => id;
         public string DisplayName => displayName;
         public ClassType ClassType => classType;
-        public GameObject ProjectilePrefab => projectilePrefab;
         public WeaponStats Stats => stats;
     }
 
