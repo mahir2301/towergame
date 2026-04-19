@@ -148,6 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0e6c09eed4dca54ea90aa72088fe9bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkStarter
+  autoStartHost: 1
 --- !u!4 &172765788
 Transform:
   m_ObjectHideFlags: 0

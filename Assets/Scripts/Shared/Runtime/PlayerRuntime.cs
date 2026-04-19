@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Shared;
 using Shared.Data;
+using Shared.Entities;
 using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
@@ -187,22 +188,25 @@ namespace Shared.Runtime
 
         private void SpawnProjectile(Vector3 targetPosition, WeaponType config)
         {
-            if (config.ProjectilePrefab == null) return;
-
             var startPos = transform.position + Vector3.up * 1.5f;
-            var projectileObj = Instantiate(config.ProjectilePrefab, startPos, Quaternion.identity);
-            var netObj = projectileObj.GetComponent<NetworkObject>();
+            if (!EntityManager.TrySpawnByKind(EntityKind.Projectile, startPos, Quaternion.identity, ulong.MaxValue,
+                    out var projectileEntity))
+            {
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
+                    $"Failed to spawn projectile entity for player netId={NetworkObjectId}.");
+                return;
+            }
 
-            if (netObj != null)
+            var projectile = projectileEntity as Projectile;
+            if (projectile == null)
             {
-                netObj.Spawn();
-                var projectile = projectileObj.GetComponent<Projectile>();
-                projectile?.Initialize(targetPosition, config.Stats.projectileSpeed, config.Stats.damage);
+                RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
+                    $"Spawned projectile entity id={projectileEntity.EntityId} does not have Projectile runtime.");
+                projectileEntity.NetworkObject.Despawn(true);
+                return;
             }
-            else
-            {
-                Destroy(projectileObj);
-            }
+
+            projectile.Initialize(targetPosition, config.Stats.projectileSpeed, config.Stats.damage);
         }
 
         [ClientRpc]

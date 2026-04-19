@@ -1,12 +1,13 @@
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
+using Shared.Entities;
 
 namespace Shared.Runtime
 {
     [RequireComponent(typeof(NetworkTransform))]
     [RequireComponent(typeof(NetworkObject))]
-    public class Projectile : NetworkBehaviour
+    public class Projectile : EntityRuntime
     {
         private const float DEFAULT_SPEED = 30f;
         private const float MAX_DISTANCE = 100f;
