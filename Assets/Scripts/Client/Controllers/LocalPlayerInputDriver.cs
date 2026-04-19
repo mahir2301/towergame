@@ -1,5 +1,6 @@
 using Shared;
 using Shared.Runtime;
+using Shared.Utilities;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -19,6 +20,16 @@ namespace Client.Controllers
         private readonly Matrix4x4 isoMatrix = Matrix4x4.Rotate(Quaternion.Euler(0f, 45f, 0f));
         private bool jumpPressedThisFrame;
         private float targetZoom;
+
+        private void OnEnable()
+        {
+            GameEvents.PlayerActionResultReceived += HandlePlayerActionResultReceived;
+        }
+
+        private void OnDisable()
+        {
+            GameEvents.PlayerActionResultReceived -= HandlePlayerActionResultReceived;
+        }
 
         private void Start()
         {
@@ -120,6 +131,16 @@ namespace Client.Controllers
                 player.SubmitSwitchWeaponCommand(1);
             else if (keyboard.digit3Key.wasPressedThisFrame)
                 player.SubmitSwitchWeaponCommand(2);
+        }
+
+        private static void HandlePlayerActionResultReceived(PlayerRuntime player, PlayerActionKind actionKind,
+            PlayerActionResult result)
+        {
+            if (player != PlayerRuntime.LocalPlayer || result == PlayerActionResult.Accepted)
+                return;
+
+            RuntimeLog.Entity.Warning(RuntimeLog.Code.EntityActionRejected,
+                $"Server rejected action {actionKind}: {result}.");
         }
     }
 }

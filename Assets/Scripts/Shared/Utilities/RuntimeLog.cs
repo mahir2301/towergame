@@ -48,6 +48,7 @@ namespace Shared.Utilities
             public const string EntityMissingTypeDefinition = "EN-009";
             public const string EntityMissingTypeId = "EN-010";
             public const string EntitySpawnFailed = "EN-011";
+            public const string EntityActionRejected = "EN-012";
         }
 
         public readonly struct LogChannel

@@ -11,6 +11,19 @@ namespace Shared.Runtime
         ConnectEnergy = 3,
     }
 
+    public enum PlayerActionResult : byte
+    {
+        Accepted = 0,
+        RejectedStale = 1,
+        RejectedInvalidPayload = 2,
+        RejectedOutOfPhase = 3,
+        RejectedNoWeapon = 4,
+        RejectedCooldown = 5,
+        RejectedInvalidConfig = 6,
+        RejectedInsufficientEnergy = 7,
+        RejectedInvalidEnergyTarget = 8,
+    }
+
     public struct PlayerMoveCommand : INetworkSerializable
     {
         public uint Sequence;

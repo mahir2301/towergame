@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Shared;
 using Shared.Data;
 using Shared.Utilities;
 using Unity.Netcode;
@@ -211,53 +212,86 @@ namespace Shared.Runtime
             GameEvents.RaiseWeaponFired(this, targetPosition, weaponId);
         }
 
+        [Rpc(SendTo.Owner)]
+        private void ReportActionResultClientRpc(PlayerActionKind actionKind, PlayerActionResult result)
+        {
+            if (!IsOwner)
+                return;
+
+            GameEvents.RaisePlayerActionResultReceived(this, actionKind, result);
+        }
+
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         private void SubmitActionCommandServerRpc(PlayerActionCommand command, RpcParams rpcParams = default)
         {
             if (!IsServer) return;
             if (!HasCommandAuthority(rpcParams.Receive.SenderClientId)) return;
-            if (!IsActionCommandFresh(command)) return;
+            if (!IsActionCommandFresh(command))
+            {
+                ReportActionResultClientRpc(command.Kind, PlayerActionResult.RejectedStale);
+                return;
+            }
+
+            if (!IsActionCommandValid(command))
+            {
+                ReportActionResultClientRpc(command.Kind, PlayerActionResult.RejectedInvalidPayload);
+                return;
+            }
 
             lastActionSequence = command.Sequence;
             hasActionSequence = true;
 
+            var result = PlayerActionResult.RejectedInvalidPayload;
             switch (command.Kind)
             {
                 case PlayerActionKind.Fire:
-                    HandleFireCommand(command.TargetPosition);
-                    return;
+                    result = HandleFireCommand(command.TargetPosition);
+                    break;
                 case PlayerActionKind.SwitchWeapon:
-                    HandleSwitchWeaponCommand(command.WeaponIndex);
-                    return;
+                    result = HandleSwitchWeaponCommand(command.WeaponIndex);
+                    break;
                 case PlayerActionKind.ConnectEnergy:
-                    HandleConnectEnergyCommand(command.EnergyId);
-                    return;
+                    result = HandleConnectEnergyCommand(command.EnergyId);
+                    break;
                 default:
-                    return;
+                    result = PlayerActionResult.RejectedInvalidPayload;
+                    break;
             }
+
+            ReportActionResultClientRpc(command.Kind, result);
         }
 
-        private void HandleSwitchWeaponCommand(int index)
+        private PlayerActionResult HandleSwitchWeaponCommand(int index)
         {
+            if (!IsCombatPhase())
+                return PlayerActionResult.RejectedOutOfPhase;
+
             if (index < 0 || index >= weaponInstances.Count)
-                return;
+                return PlayerActionResult.RejectedInvalidPayload;
 
             currentWeaponIndex.Value = index;
             GameEvents.RaiseWeaponSwitched(this, index);
+            return PlayerActionResult.Accepted;
         }
 
-        private void HandleFireCommand(Vector3 targetPosition)
+        private PlayerActionResult HandleFireCommand(Vector3 targetPosition)
         {
+            if (!IsCombatPhase())
+                return PlayerActionResult.RejectedOutOfPhase;
+
             var weapon = GetCurrentWeapon();
-            if (weapon == null || !weapon.CanFire())
-                return;
+            if (weapon == null)
+                return PlayerActionResult.RejectedNoWeapon;
+
+            if (!weapon.CanFire())
+                return PlayerActionResult.RejectedCooldown;
 
             var config = weapon.GetConfig();
             if (config == null)
-                return;
+                return PlayerActionResult.RejectedInvalidConfig;
 
             if (!TryConsumeEnergy(config.Stats.energyCostPerShot, config.ClassType))
-                return;
+                return PlayerActionResult.RejectedInsufficientEnergy;
 
             weapon.StartCooldown();
 
@@ -269,24 +303,26 @@ namespace Shared.Runtime
 
             SpawnProjectile(targetPosition, config);
             FireWeaponClientRpc(targetPosition, config.Id);
+            return PlayerActionResult.Accepted;
         }
 
-        private void HandleConnectEnergyCommand(ulong energyId)
+        private PlayerActionResult HandleConnectEnergyCommand(ulong energyId)
         {
             if (energyId == ulong.MaxValue)
             {
                 connectedEnergyId.Value = ulong.MaxValue;
-                return;
+                return PlayerActionResult.Accepted;
             }
 
             if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(energyId, out var obj))
-                return;
+                return PlayerActionResult.RejectedInvalidEnergyTarget;
 
             var energy = obj.GetComponent<EnergyRuntime>();
             if (energy == null || !energy.IsSpawned)
-                return;
+                return PlayerActionResult.RejectedInvalidEnergyTarget;
 
             connectedEnergyId.Value = energyId;
+            return PlayerActionResult.Accepted;
         }
 
         private bool TryConsumeEnergy(int amount, ClassType classType)
@@ -378,6 +414,45 @@ namespace Shared.Runtime
                 return false;
 
             return IsCommandTimestampValid(command.ClientTime);
+        }
+
+        private bool IsActionCommandValid(PlayerActionCommand command)
+        {
+            switch (command.Kind)
+            {
+                case PlayerActionKind.Fire:
+                    if (float.IsNaN(command.TargetPosition.x) || float.IsNaN(command.TargetPosition.y)
+                        || float.IsNaN(command.TargetPosition.z) || float.IsInfinity(command.TargetPosition.x)
+                        || float.IsInfinity(command.TargetPosition.y) || float.IsInfinity(command.TargetPosition.z))
+                    {
+                        RuntimeLog.Entity.Warning(RuntimeLog.Code.EntityActionRejected,
+                            $"Rejected fire command for netId={NetworkObjectId}: invalid target position.");
+                        return false;
+                    }
+
+                    return true;
+
+                case PlayerActionKind.SwitchWeapon:
+                    if (command.WeaponIndex >= 0 && command.WeaponIndex < weaponInstances.Count)
+                        return true;
+
+                    RuntimeLog.Entity.Warning(RuntimeLog.Code.EntityActionRejected,
+                        $"Rejected switch-weapon command for netId={NetworkObjectId}: index {command.WeaponIndex} is invalid.");
+                    return false;
+
+                case PlayerActionKind.ConnectEnergy:
+                    return true;
+
+                default:
+                    RuntimeLog.Entity.Warning(RuntimeLog.Code.EntityActionRejected,
+                        $"Rejected action command for netId={NetworkObjectId}: unsupported action '{command.Kind}'.");
+                    return false;
+            }
+        }
+
+        private static bool IsCombatPhase()
+        {
+            return PhaseManager.Instance != null && PhaseManager.Instance.CurrentPhase == GamePhase.Combat;
         }
 
         private bool IsCommandTimestampValid(double clientTime)
