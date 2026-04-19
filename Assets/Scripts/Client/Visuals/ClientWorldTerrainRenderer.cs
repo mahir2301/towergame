@@ -23,6 +23,11 @@ namespace Client.Visuals
         private int lastAppliedWaterSmoothPasses = int.MinValue;
         private bool subscribedToSeed;
 
+        private void OnEnable()
+        {
+            InvalidateCachedState();
+        }
+
         private void Start()
         {
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
@@ -49,6 +54,9 @@ namespace Client.Visuals
         private void OnDestroy()
         {
             UnsubscribeFromSeedChange();
+
+            if (waterMeshObject != null)
+                Destroy(waterMeshObject);
         }
 
         private void OnSeedChanged(int previousValue, int newValue)
@@ -105,7 +113,8 @@ namespace Client.Visuals
                 && minDistanceFromEdge == lastAppliedMinDistanceFromEdge
                 && Mathf.Approximately(waterThreshold, lastAppliedWaterThreshold)
                 && Mathf.Approximately(waterNoiseScale, lastAppliedWaterNoiseScale)
-                && waterSmoothPasses == lastAppliedWaterSmoothPasses)
+                && waterSmoothPasses == lastAppliedWaterSmoothPasses
+                && HasWaterVisual())
             {
                 return;
             }
@@ -144,10 +153,18 @@ namespace Client.Visuals
             if (waterMeshObject != null)
                 Destroy(waterMeshObject);
 
-            if (waterCells.Count == 0 || waterMaterial == null)
+            if (waterCells.Count == 0)
                 return;
 
+            if (waterMaterial == null)
+            {
+                RuntimeLog.Water.Error(RuntimeLog.Code.WaterMissingMaterial,
+                    "Cannot rebuild water mesh because waterMaterial is not assigned.");
+                return;
+            }
+
             waterMeshObject = new GameObject("WaterMesh");
+            waterMeshObject.transform.SetParent(transform, false);
 
             var meshFilter = waterMeshObject.AddComponent<MeshFilter>();
             var meshRenderer = waterMeshObject.AddComponent<MeshRenderer>();
@@ -157,6 +174,25 @@ namespace Client.Visuals
             meshRenderer.sharedMaterial = waterMat;
 
             meshFilter.sharedMesh = BuildWaterMesh(waterCells);
+        }
+
+        private bool HasWaterVisual()
+        {
+            if (waterMeshObject == null)
+                return false;
+
+            var meshFilter = waterMeshObject.GetComponent<MeshFilter>();
+            var meshRenderer = waterMeshObject.GetComponent<MeshRenderer>();
+            return meshFilter != null && meshRenderer != null && meshFilter.sharedMesh != null && meshRenderer.sharedMaterial != null;
+        }
+
+        private void InvalidateCachedState()
+        {
+            lastAppliedSeed = -1;
+            lastAppliedMinDistanceFromEdge = int.MinValue;
+            lastAppliedWaterThreshold = float.NaN;
+            lastAppliedWaterNoiseScale = float.NaN;
+            lastAppliedWaterSmoothPasses = int.MinValue;
         }
 
         private static Mesh BuildWaterMesh(HashSet<Vector2Int> waterCells)
