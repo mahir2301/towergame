@@ -18,11 +18,6 @@ namespace Shared.Utilities
             return !IsListening || IsClient;
         }
 
-        public static bool ShouldRunClientSystems()
-        {
-            return ShouldRunMenuSystems();
-        }
-
         public static bool IsLocalClient(ulong clientId)
         {
             return NetworkManager.Singleton != null && NetworkManager.Singleton.LocalClientId == clientId;

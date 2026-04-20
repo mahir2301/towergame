@@ -460,9 +460,7 @@ MonoBehaviour:
   defaultMaxCapacity: 100
   maxAttemptsPerNode: 100
   edgePadding: 2
-  energyNodeConfig:
-  - {fileID: 11400000, guid: cbb71f6aa217ca747a6cbf183665092b, type: 2}
-  - {fileID: 11400000, guid: b52d8142ae17cf44fa8dcfdb0967e115, type: 2}
+  energyTypeIds: []
   gridManager: {fileID: 500300003}
   worldGenerationState: {fileID: 500300010}
   serverSpawnManager: {fileID: 500300011}
@@ -573,7 +571,7 @@ MonoBehaviour:
   gridManager: {fileID: 500300003}
   towerSpawnSystem: {fileID: 500300006}
   mainCamera: {fileID: 1745330854}
-  currentTowerConfig: {fileID: 11400000, guid: 1847706b3890bb3499f0ca53a07a8a00, type: 2}
+  currentTowerConfig: {fileID: 0}
   canConnectColor: {r: 0.2, g: 0.8, b: 0.2, a: 0.6}
   cannotConnectColor: {r: 0.8, g: 0.2, b: 0.2, a: 0.6}
 --- !u!114 &500300014
@@ -603,7 +601,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Client::Client.Controllers.LocalPlayerCameraBinder
   mainCamera: {fileID: 267404663}
-  playerResolver: {fileID: 500300017}
 --- !u!114 &500300016
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -619,7 +616,6 @@ MonoBehaviour:
   mainCamera: {fileID: 1745330854}
   cinemachineCamera: {fileID: 267404663}
   placementController: {fileID: 500300013}
-  playerResolver: {fileID: 500300017}
   zoomMin: 3
   zoomMax: 12
   zoomSensitivity: 50
