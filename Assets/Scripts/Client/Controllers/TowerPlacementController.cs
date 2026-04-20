@@ -24,7 +24,7 @@ namespace Client.Controllers
         private Renderer[] ghostRenderers;
         private MaterialPropertyBlock ghostPropertyBlock;
         private Vector2Int? currentGridPos;
-        private bool subscribedToPlacementResults;
+        private readonly SubscriptionGroup subscriptions = new();
 
         private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
 
@@ -32,12 +32,18 @@ namespace Client.Controllers
         {
             ghostPropertyBlock = new MaterialPropertyBlock();
             CreateGhost();
-            SubscribeToPlacementResults();
         }
 
-        private void OnDestroy()
+        private void OnEnable()
         {
-            UnsubscribeFromPlacementResults();
+            subscriptions.Add(
+                () => ClientEvents.PlacementResultReceived += HandlePlacementResultReceived,
+                () => ClientEvents.PlacementResultReceived -= HandlePlacementResultReceived);
+        }
+
+        private void OnDisable()
+        {
+            subscriptions.UnbindAll();
         }
 
         private void Update()
@@ -177,24 +183,6 @@ namespace Client.Controllers
         {
             return PlacementValidator.ValidatePlacement(gridPos, towerConfig, gridManager, PhaseManager.Instance,
                 IsInEnergyRangeFromRegistry);
-        }
-
-        private void SubscribeToPlacementResults()
-        {
-            if (subscribedToPlacementResults)
-                return;
-
-            TowerSpawnSystem.PlacementResultReceived += HandlePlacementResultReceived;
-            subscribedToPlacementResults = true;
-        }
-
-        private void UnsubscribeFromPlacementResults()
-        {
-            if (!subscribedToPlacementResults)
-                return;
-
-            TowerSpawnSystem.PlacementResultReceived -= HandlePlacementResultReceived;
-            subscribedToPlacementResults = false;
         }
 
         private static void HandlePlacementResultReceived(string towerConfigId, Vector2Int gridPos, PlacementResult result)

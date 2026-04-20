@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using Shared;
 using Shared.Data;
 using Shared.Grid;
 using Shared.Runtime;
+using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -14,7 +16,20 @@ namespace Server.Managers
         private readonly List<EnergyRuntime> energyNodes = new();
         private readonly Dictionary<ulong, TowerRuntime> activeAntennas = new();
         private readonly Dictionary<ulong, ulong> towerToEnergy = new();
-        private bool subscribedToRuntimeEvents;
+        private readonly SubscriptionGroup subscriptions = new();
+
+        private static bool IsServerRuntime
+            => NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+
+            if (!IsServerRuntime)
+                return;
+
+            BootstrapFromSpawnedRuntimes();
+        }
 
         private void Awake()
         {
@@ -25,13 +40,23 @@ namespace Server.Managers
             }
             Instance = this;
 
-            if (!subscribedToRuntimeEvents)
+            subscriptions.Add(() => ServerEvents.EnergySpawned += RegisterEnergyRuntime,
+                () => ServerEvents.EnergySpawned -= RegisterEnergyRuntime);
+            subscriptions.Add(() => ServerEvents.EnergyDespawned += UnregisterEnergyRuntime,
+                () => ServerEvents.EnergyDespawned -= UnregisterEnergyRuntime);
+            subscriptions.Add(() => ServerEvents.TowerSpawned += OnTowerSpawned,
+                () => ServerEvents.TowerSpawned -= OnTowerSpawned);
+            subscriptions.Add(() => ServerEvents.TowerDespawned += OnTowerDespawned,
+                () => ServerEvents.TowerDespawned -= OnTowerDespawned);
+
+            var networkManager = NetworkManager.Singleton;
+            if (networkManager != null)
             {
-                EnergyRuntime.ServerSpawned += RegisterEnergyRuntime;
-                EnergyRuntime.ServerDespawned += UnregisterEnergyRuntime;
-                TowerRuntime.ServerSpawned += OnTowerSpawned;
-                TowerRuntime.ServerDespawned += OnTowerDespawned;
-                subscribedToRuntimeEvents = true;
+                subscriptions.Add(() => networkManager.OnServerStarted += HandleServerStarted,
+                    () => networkManager.OnServerStarted -= HandleServerStarted);
+
+                if (networkManager.IsServer && networkManager.IsListening)
+                    BootstrapFromSpawnedRuntimes();
             }
         }
 
@@ -39,14 +64,7 @@ namespace Server.Managers
         {
             base.OnDestroy();
 
-            if (subscribedToRuntimeEvents)
-            {
-                EnergyRuntime.ServerSpawned -= RegisterEnergyRuntime;
-                EnergyRuntime.ServerDespawned -= UnregisterEnergyRuntime;
-                TowerRuntime.ServerSpawned -= OnTowerSpawned;
-                TowerRuntime.ServerDespawned -= OnTowerDespawned;
-                subscribedToRuntimeEvents = false;
-            }
+            subscriptions.UnbindAll();
 
             if (Instance == this)
                 Instance = null;
@@ -55,6 +73,9 @@ namespace Server.Managers
         private void RegisterEnergyRuntime(EnergyRuntime runtime)
         {
             if (runtime == null)
+                return;
+
+            if (energyNodes.Contains(runtime))
                 return;
 
             energyNodes.Add(runtime);
@@ -95,10 +116,19 @@ namespace Server.Managers
 
         public bool TryConnectTowerToEnergy(TowerRuntime tower)
         {
-            if (!IsServer) return false;
+            if (!IsServerRuntime || tower == null)
+                return false;
+
+            if (energyNodes.Count == 0)
+                BootstrapFromSpawnedRuntimes();
+
+            var towerId = tower.NetworkObjectId;
+            if (towerToEnergy.ContainsKey(towerId))
+                return true;
 
             var config = tower.Config;
-            if (config == null) return false;
+            if (config == null)
+                return false;
 
             var candidate = FindBestCandidate(tower.GridPosition, config.ClassType, config.Stats.energyCost);
             if (candidate.energy == null)
@@ -107,7 +137,6 @@ namespace Server.Managers
             if (!candidate.energy.TryConnectTower(tower.NetworkObjectId, config.Stats.energyCost))
                 return false;
 
-            var towerId = tower.NetworkObjectId;
             tower.SetConnection(candidate.energy.NetworkObjectId, candidate.viaAntennaId);
             towerToEnergy[towerId] = candidate.energy.NetworkObjectId;
 
@@ -116,9 +145,39 @@ namespace Server.Managers
             return true;
         }
 
+        private void BootstrapFromSpawnedRuntimes()
+        {
+            if (!IsServerRuntime)
+                return;
+
+            energyNodes.Clear();
+            activeAntennas.Clear();
+            towerToEnergy.Clear();
+
+            var spawnedEnergies = FindObjectsByType<EnergyRuntime>(FindObjectsSortMode.None);
+            for (var i = 0; i < spawnedEnergies.Length; i++)
+            {
+                var energy = spawnedEnergies[i];
+                if (energy == null || !energy.IsSpawned)
+                    continue;
+
+                RegisterEnergyRuntime(energy);
+            }
+
+            var spawnedTowers = FindObjectsByType<TowerRuntime>(FindObjectsSortMode.None);
+            for (var i = 0; i < spawnedTowers.Length; i++)
+            {
+                var tower = spawnedTowers[i];
+                if (tower == null || !tower.IsSpawned)
+                    continue;
+
+                TryConnectTowerToEnergy(tower);
+            }
+        }
+
         public void DisconnectTower(TowerRuntime tower)
         {
-            if (!IsServer) return;
+            if (!IsServerRuntime) return;
 
             var towerId = tower.NetworkObjectId;
             var config = tower.Config;
@@ -167,6 +226,9 @@ namespace Server.Managers
 
         public bool IsPositionInRange(Vector2Int pos, ClassType classType, int energyCost)
         {
+            if (!IsServerRuntime)
+                return false;
+
             foreach (var energy in energyNodes)
             {
                 if (!energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost)) continue;
@@ -193,6 +255,9 @@ namespace Server.Managers
 
         public float GetEnergyRangeForPosition(Vector2Int pos, ClassType classType, int energyCost)
         {
+            if (!IsServerRuntime)
+                return -1f;
+
             var best = -1f;
 
             foreach (var energy in energyNodes)
@@ -275,6 +340,11 @@ namespace Server.Managers
             return NetworkManager.Singleton != null
                    && NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(towerId, out var obj)
                    && (tower = obj.GetComponent<TowerRuntime>()) != null;
+        }
+
+        private void HandleServerStarted()
+        {
+            BootstrapFromSpawnedRuntimes();
         }
     }
 }

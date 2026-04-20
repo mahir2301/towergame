@@ -1,37 +1,47 @@
 # AGENTS
 
-## Project Reality (verify against code, not design docs)
-- This is a Unity 6 project pinned to `6000.3.11f1` (`ProjectSettings/ProjectVersion.txt`).
-- `Architecture.md`/`Concept.md` are aspirational in places; trust `Assets/Scripts/**` for current behavior.
-- The only enabled build scene is `Assets/Scenes/GameScene.unity` (`ProjectSettings/EditorBuildSettings.asset`).
+## Project Reality
+- Unity 6 pinned to `6000.3.11f1` (`ProjectSettings/ProjectVersion.txt`).
+- Only enabled build scene: `Assets/Scenes/GameScene.unity`.
+- Treat `Concept.md` as aspirational; trust `Assets/Scripts/**`.
 
-## Code Boundaries That Matter
-- Runtime code is split by asmdefs: `Shared` (core/runtime/data), `Server` (server managers), `Client` (UI/input/visuals).
-- `Client` and `Server` both depend on `Shared`; keep cross-layer logic in `Shared` unless it is strictly presentation or server orchestration.
+## Layer Boundaries
+- asmdefs: `Shared` (core/runtime/data), `Server` (server orchestration), `Client` (presentation/input/UI).
+- Keep cross-layer contracts in `Shared`; keep client/server-specific orchestration out of `Shared` unless it is a strict contract.
 
-## Startup and Execution Flow
-- `NetworkStarter` auto-calls `NetworkManager.Singleton.StartHost()` in `Start()`; Play Mode starts as host unless you change scene wiring.
-- World generation is server-authoritative in `WorldGenerationManager.OnNetworkSpawn()`:
-  - clear grid state
-  - generate water (`GridWaterGenerator`)
-  - spawn energy nodes (`GridEnergySourceGenerator`)
-  - publish seed/settings via `WorldGenerationState` network variables
-- Build/combat gating is controlled by `PhaseManager` (`GamePhase.Building` / `GamePhase.Combat`).
+## Event Architecture (authoritative convention)
+- `GameEvents`: shared cross-layer runtime signals.
+- `ClientEvents`: client-only runtime signals (`PlacementResultReceived`, `LocalPlayerChanged`).
+- `ServerEvents`: server-only runtime signals (`PlaceTowerRequested`, `TowerSpawned/Despawned`, `EnergySpawned/Despawned`).
+- Do not add new static events on feature classes (`TowerRuntime`, `EnergyRuntime`, `TowerSpawnSystem`, etc.); route through one of the three event hubs.
 
-## Placement/Energy Gotchas
-- Placement request path: `TowerPlacementController` -> `TowerSpawnSystem.RequestPlaceTowerServerRpc` -> `ServerSpawnManager.TryPlaceTowerRuntime`.
-- Client blocks placement over UI and outside build phase; ghost color uses client-side range checks from `ClientObjectRegistry`.
-- Server-side spawn path validates occupancy/prefab, then `EnergyNetworkManager` tries to connect the spawned tower to energy; tower can exist but be unpowered.
+## Startup and Flow
+- `NetworkStarter` auto-starts host in `Start()` by default.
+- `RuntimeBootstrap` owns readiness (`Initializing`/`Ready`) and emits `StateChanged`; avoid polling `IsReady` in Update when an event subscription can be used.
+- World generation is server-authoritative and event-driven:
+  - `WorldGenerationManager` waits for `WorldGenerationState.ServerSpawned`.
+  - then generates terrain + energy and publishes seed/settings once.
 
-## Data/Asset Conventions
-- `GameRegistry.Instance` uses `Resources.Load<GameRegistry>("GameRegistry")`; keep the asset at `Assets/Resources/GameRegistry.asset`.
-- When adding new `TowerType`/`WeaponType`/`EnergyType`/`ClassType` assets, run `GameRegistry` context menu **Collect Assets** to rebuild registry lists.
-- Unity serialization mode is force-text (`ProjectSettings/EditorSettings.asset`), so YAML asset diffs are expected.
+## Registry Is Source of Truth
+- `GameRegistry.Instance` loads from `Resources/GameRegistry` (`Assets/Resources/GameRegistry.asset`).
+- Content lookup must use registry ids/lookups (`GetTowerType`, `GetEnergyType`, `GetWeaponType`, `GetEntityType`).
+- World generation energy types are resolved from registry (`energyTypeIds` override list, otherwise all registry energy types).
+- After adding/changing content assets, run `GameRegistry` context menu **Collect Assets**, then validate with **Validate Registry**.
 
-## Verification Expectations
-- There is no repo-local CI/workflow or task runner config to mirror; validate changes in Unity Editor (compile + Play Mode in `GameScene`).
-- No test assemblies were found under `Assets/**/Tests`; do not claim automated test coverage unless you add it.
+## Placement Pipeline
+- Client: `TowerPlacementController` validates + sends `TowerSpawnSystem.RequestPlaceTowerServerRpc`.
+- Server: `TowerSpawnSystem` dispatches placement request via `ServerEvents.PlaceTowerRequested`; `ServerSpawnManager` handles placement.
+- Result returns to requesting client via `ClientEvents.PlacementResultReceived`.
+- `OutOfEnergyRange` is allowed (soft-fail visual/feedback state), not hard rejection.
+
+## Scene Wiring Gotchas
+- `NetworkManager` must stay at scene root (do not nest).
+- Keep required shared networked systems present and referenced (`GridManager`, `PhaseManager`, `TowerSpawnSystem`, `WorldGenerationState`, `ServerSpawnManager`, `WorldGenerationManager`).
+
+## Verification
+- No CI/task runner/tests in repo; verify in Unity Editor (compile + Play Mode in `GameScene`).
+- Validate both host flow and client-join flow for networking changes.
 
 ## Hygiene
-- Do not edit `Library/`, `Logs/`, `obj/`, or `UserSettings/`.
-- Treat `*.csproj` and `*.sln` as generated Unity artifacts (they are ignored in `.gitignore`) unless the user explicitly asks to touch them.
+- Never edit `Library/`, `Logs/`, `obj/`, `UserSettings/`.
+- Treat `*.csproj` and `*.sln` as generated Unity artifacts.

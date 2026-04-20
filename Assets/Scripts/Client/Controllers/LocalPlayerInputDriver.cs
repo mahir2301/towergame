@@ -12,7 +12,6 @@ namespace Client.Controllers
         [SerializeField] private Camera mainCamera;
         [SerializeField] private CinemachineCamera cinemachineCamera;
         [SerializeField] private TowerPlacementController placementController;
-        [SerializeField] private LocalPlayerEntityResolver playerResolver;
         [SerializeField] private float zoomMin = 3f;
         [SerializeField] private float zoomMax = 12f;
         [SerializeField] private float zoomSensitivity = 50f;
@@ -21,21 +20,26 @@ namespace Client.Controllers
         private readonly Matrix4x4 isoMatrix = Matrix4x4.Rotate(Quaternion.Euler(0f, 45f, 0f));
         private bool jumpPressedThisFrame;
         private float targetZoom;
+        private PlayerRuntime currentPlayer;
 
         private void OnEnable()
         {
             GameEvents.PlayerActionResultReceived += HandlePlayerActionResultReceived;
+            ClientEvents.LocalPlayerChanged += HandleLocalPlayerChanged;
         }
 
         private void OnDisable()
         {
             GameEvents.PlayerActionResultReceived -= HandlePlayerActionResultReceived;
+            ClientEvents.LocalPlayerChanged -= HandleLocalPlayerChanged;
         }
 
         private void Start()
         {
             if (cinemachineCamera != null)
                 targetZoom = cinemachineCamera.Lens.OrthographicSize;
+
+            currentPlayer = ClientEvents.CurrentLocalPlayer;
         }
 
         private void Update()
@@ -47,8 +51,7 @@ namespace Client.Controllers
 
             HandleZoom(mouse);
 
-            var player = playerResolver != null ? playerResolver.CurrentPlayer : null;
-            if (player == null)
+            if (currentPlayer == null)
                 return;
 
             if (keyboard.spaceKey.wasPressedThisFrame)
@@ -56,10 +59,15 @@ namespace Client.Controllers
 
             var move = ReadMoveInput(keyboard);
             var lookTarget = ReadLookTarget(mouse.position.ReadValue());
-            player.SubmitMoveCommand(move, lookTarget, jumpPressedThisFrame);
+            currentPlayer.SubmitMoveCommand(move, lookTarget, jumpPressedThisFrame);
             jumpPressedThisFrame = false;
 
-            HandleActions(keyboard, mouse, player, lookTarget);
+            HandleActions(keyboard, mouse, currentPlayer, lookTarget);
+        }
+
+        private void HandleLocalPlayerChanged(PlayerRuntime player)
+        {
+            currentPlayer = player;
         }
 
         private void HandleZoom(Mouse mouse)
@@ -165,12 +173,6 @@ namespace Client.Controllers
             if (placementController == null)
             {
                 issue = "placementController is not assigned.";
-                return false;
-            }
-
-            if (playerResolver == null)
-            {
-                issue = "playerResolver is not assigned.";
                 return false;
             }
 

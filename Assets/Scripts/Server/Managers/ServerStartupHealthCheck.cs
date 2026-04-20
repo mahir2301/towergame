@@ -36,6 +36,12 @@ namespace Server.Managers
                     $"WorldGenerationManager configuration issue: {worldIssue}");
             }
 
+            if (Object.FindFirstObjectByType<EnergyNetworkManager>() == null)
+            {
+                RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,
+                    $"Missing EnergyNetworkManager in scene '{sceneName}'.");
+            }
+
             if (Object.FindFirstObjectByType<ServerEntityBootstrap>() == null)
             {
                 RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,

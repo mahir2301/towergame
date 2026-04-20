@@ -40,18 +40,27 @@ namespace Client.Controllers
             var networkManager = NetworkManager.Singleton;
             if (networkManager == null || !networkManager.IsListening)
             {
-                CurrentPlayer = null;
+                SetCurrentPlayer(null);
                 return;
             }
 
             if (!EntityManager.TryGetPlayerEntityForClient(networkManager.LocalClientId, out var entityRuntime)
                 || entityRuntime == null)
             {
-                CurrentPlayer = null;
+                SetCurrentPlayer(null);
                 return;
             }
 
-            CurrentPlayer = entityRuntime.GetComponent<PlayerRuntime>();
+            SetCurrentPlayer(entityRuntime.GetComponent<PlayerRuntime>());
+        }
+
+        private void SetCurrentPlayer(PlayerRuntime player)
+        {
+            if (CurrentPlayer == player)
+                return;
+
+            CurrentPlayer = player;
+            ClientEvents.RaiseLocalPlayerChanged(player);
         }
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Client.UI;
+using Shared;
 using Shared.Grid;
 using Shared.Runtime;
 using Unity.Netcode;
@@ -11,89 +12,138 @@ namespace Client.Visuals
     {
         [SerializeField] private GridManager gridManager;
 
-        private readonly HashSet<ulong> registeredEnergy = new();
-        private readonly HashSet<ulong> registeredTowers = new();
+        private readonly Dictionary<ulong, EnergyRuntime> energyById = new();
+        private readonly Dictionary<ulong, TowerRuntime> towerById = new();
         private readonly Dictionary<ulong, RangeIndicator> energyIndicators = new();
         private readonly Dictionary<ulong, RangeIndicator> towerIndicators = new();
 
+        private void OnEnable()
+        {
+            GameEvents.EnergySpawned += HandleEnergySpawned;
+            GameEvents.EnergyDespawned += HandleEnergyDespawned;
+            GameEvents.TowerSpawned += HandleTowerSpawned;
+            GameEvents.TowerDespawned += HandleTowerDespawned;
+
+            BootstrapExistingRuntimes();
+        }
+
+        private void OnDisable()
+        {
+            GameEvents.EnergySpawned -= HandleEnergySpawned;
+            GameEvents.EnergyDespawned -= HandleEnergyDespawned;
+            GameEvents.TowerSpawned -= HandleTowerSpawned;
+            GameEvents.TowerDespawned -= HandleTowerDespawned;
+
+            ClearAllPresentation();
+        }
+
         private void LateUpdate()
         {
-            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
-                return;
-            if (ClientObjectRegistry.Instance == null)
+            if (!IsClientActive())
                 return;
 
-            SyncEnergyPresentation();
-            SyncTowerPresentation();
+            foreach (var kvp in towerIndicators)
+            {
+                if (!towerById.TryGetValue(kvp.Key, out var tower) || tower == null || !tower.IsSpawned || kvp.Value == null)
+                    continue;
+
+                var config = tower.Config;
+                if (config == null || !config.IsAntenna)
+                    continue;
+
+                kvp.Value.UpdateRange(config.Stats.antennaRange, tower.IsPowered);
+            }
         }
 
-        private void SyncEnergyPresentation()
+        private void BootstrapExistingRuntimes()
         {
-            var energyNodes = ClientObjectRegistry.Instance.EnergyNodes;
-            var seen = new HashSet<ulong>();
+            if (!IsClientActive())
+                return;
 
-            foreach (var kvp in energyNodes)
-            {
-                var energy = kvp.Value;
-                if (energy == null || !energy.IsSpawned)
-                    continue;
+            var energies = FindObjectsByType<EnergyRuntime>(FindObjectsSortMode.None);
+            for (var i = 0; i < energies.Length; i++)
+                HandleEnergySpawned(energies[i]);
 
-                var id = energy.NetworkObjectId;
-                seen.Add(id);
-
-                if (!registeredEnergy.Contains(id))
-                {
-                    registeredEnergy.Add(id);
-                    WorldOverlayManager.Instance?.RegisterEnergy(energy);
-                    gridManager?.RegisterOccupiedCells(energy.GridPosition, Vector2Int.one, energy.gameObject);
-                }
-
-                if (!energyIndicators.TryGetValue(id, out var indicator) || indicator == null)
-                {
-                    indicator = CreateIndicator(energy.transform, "EnergyRangeIndicator");
-                    energyIndicators[id] = indicator;
-                }
-
-                indicator.ShowEnergy(energy.EnergyRange);
-            }
-
-            RemoveStaleEnergy(seen);
+            var towers = FindObjectsByType<TowerRuntime>(FindObjectsSortMode.None);
+            for (var i = 0; i < towers.Length; i++)
+                HandleTowerSpawned(towers[i]);
         }
 
-        private void SyncTowerPresentation()
+        private void HandleEnergySpawned(EnergyRuntime energy)
         {
-            var towers = ClientObjectRegistry.Instance.Towers;
-            var seen = new HashSet<ulong>();
+            if (!IsClientActive() || energy == null || !energy.IsSpawned)
+                return;
 
-            foreach (var kvp in towers)
-            {
-                var tower = kvp.Value;
-                if (tower == null || !tower.IsSpawned)
-                    continue;
+            var id = energy.NetworkObjectId;
+            if (energyById.ContainsKey(id))
+                return;
 
-                var id = tower.NetworkObjectId;
-                seen.Add(id);
+            energyById[id] = energy;
+            WorldOverlayManager.Instance?.RegisterEnergy(energy);
+            gridManager?.RegisterOccupiedCells(energy.GridPosition, Vector2Int.one, energy.gameObject);
 
-                if (!registeredTowers.Contains(id))
-                {
-                    registeredTowers.Add(id);
-                    WorldOverlayManager.Instance?.RegisterTower(tower);
-                    gridManager?.RegisterOccupiedCells(tower.GridPosition, tower.Size, tower.gameObject);
-                }
+            var indicator = CreateIndicator(energy.transform, "EnergyRangeIndicator");
+            indicator.ShowEnergy(energy.EnergyRange);
+            energyIndicators[id] = indicator;
+        }
 
-                if (tower.Config == null || !tower.Config.IsAntenna)
-                    continue;
+        private void HandleEnergyDespawned(EnergyRuntime energy)
+        {
+            if (energy == null)
+                return;
 
-                if (!towerIndicators.TryGetValue(id, out var indicator) || indicator == null)
-                {
-                    indicator = CreateIndicator(tower.transform, "AntennaRangeIndicator");
-                    towerIndicators[id] = indicator;
-                }
+            var id = energy.NetworkObjectId;
+            WorldOverlayManager.Instance?.UnregisterEnergy(energy);
+            gridManager?.UnregisterOccupiedCells(energy.GridPosition, Vector2Int.one);
+            energyById.Remove(id);
 
-                indicator.Show(tower.Config.Stats.antennaRange, tower.IsPowered);
-            }
+            if (energyIndicators.TryGetValue(id, out var indicator) && indicator != null)
+                Destroy(indicator.gameObject);
 
-            RemoveStaleTowers(seen);
+            energyIndicators.Remove(id);
+        }
+
+        private void HandleTowerSpawned(TowerRuntime tower)
+        {
+            if (!IsClientActive() || tower == null || !tower.IsSpawned)
+                return;
+
+            var id = tower.NetworkObjectId;
+            if (towerById.ContainsKey(id))
+                return;
+
+            towerById[id] = tower;
+            WorldOverlayManager.Instance?.RegisterTower(tower);
+            gridManager?.RegisterOccupiedCells(tower.GridPosition, tower.Size, tower.gameObject);
+
+            var config = tower.Config;
+            if (config == null || !config.IsAntenna)
+                return;
+
+            var indicator = CreateIndicator(tower.transform, "AntennaRangeIndicator");
+            indicator.Show(config.Stats.antennaRange, tower.IsPowered);
+            towerIndicators[id] = indicator;
+        }
+
+        private void HandleTowerDespawned(TowerRuntime tower)
+        {
+            if (tower == null)
+                return;
+
+            var id = tower.NetworkObjectId;
+            WorldOverlayManager.Instance?.UnregisterTower(tower);
+            gridManager?.UnregisterOccupiedCells(tower.GridPosition, tower.Size);
+            towerById.Remove(id);
+
+            if (towerIndicators.TryGetValue(id, out var indicator) && indicator != null)
+                Destroy(indicator.gameObject);
+
+            towerIndicators.Remove(id);
+        }
+
+        private static bool IsClientActive()
+        {
+            return NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient;
         }
 
         private static RangeIndicator CreateIndicator(Transform parent, string name)
@@ -103,66 +153,38 @@ namespace Client.Visuals
             return go.AddComponent<RangeIndicator>();
         }
 
-        private void RemoveStaleEnergy(HashSet<ulong> seen)
+        private void ClearAllPresentation()
         {
-            var stale = new List<ulong>();
-            foreach (var id in registeredEnergy)
+            foreach (var kvp in energyById)
             {
-                if (!seen.Contains(id))
-                    stale.Add(id);
+                if (kvp.Value == null)
+                    continue;
+
+                WorldOverlayManager.Instance?.UnregisterEnergy(kvp.Value);
+                gridManager?.UnregisterOccupiedCells(kvp.Value.GridPosition, Vector2Int.one);
             }
 
-            for (var i = 0; i < stale.Count; i++)
+            foreach (var kvp in towerById)
             {
-                var id = stale[i];
-                var energy = ClientObjectRegistry.Instance.EnergyNodes.TryGetValue(id, out var e) ? e : null;
-                WorldOverlayManager.Instance?.UnregisterEnergy(energy);
-                if (energy != null)
-                    gridManager?.UnregisterOccupiedCells(energy.GridPosition, Vector2Int.one);
-                registeredEnergy.Remove(id);
+                if (kvp.Value == null)
+                    continue;
 
-                if (energyIndicators.TryGetValue(id, out var indicator) && indicator != null)
-                    Destroy(indicator.gameObject);
-                energyIndicators.Remove(id);
-            }
-        }
-
-        private void RemoveStaleTowers(HashSet<ulong> seen)
-        {
-            var stale = new List<ulong>();
-            foreach (var id in registeredTowers)
-            {
-                if (!seen.Contains(id))
-                    stale.Add(id);
+                WorldOverlayManager.Instance?.UnregisterTower(kvp.Value);
+                gridManager?.UnregisterOccupiedCells(kvp.Value.GridPosition, kvp.Value.Size);
             }
 
-            for (var i = 0; i < stale.Count; i++)
-            {
-                var id = stale[i];
-                var tower = ClientObjectRegistry.Instance.Towers.TryGetValue(id, out var t) ? t : null;
-                WorldOverlayManager.Instance?.UnregisterTower(tower);
-                if (tower != null)
-                    gridManager?.UnregisterOccupiedCells(tower.GridPosition, tower.Size);
-                registeredTowers.Remove(id);
-
-                if (towerIndicators.TryGetValue(id, out var indicator) && indicator != null)
-                    Destroy(indicator.gameObject);
-                towerIndicators.Remove(id);
-            }
-        }
-
-        private void OnDestroy()
-        {
             foreach (var kvp in energyIndicators)
-            {
                 if (kvp.Value != null)
                     Destroy(kvp.Value.gameObject);
-            }
+
             foreach (var kvp in towerIndicators)
-            {
                 if (kvp.Value != null)
                     Destroy(kvp.Value.gameObject);
-            }
+
+            energyById.Clear();
+            towerById.Clear();
+            energyIndicators.Clear();
+            towerIndicators.Clear();
         }
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Shared;
 using Shared.Runtime;
+using Shared.Utilities;
 using UnityEngine;
 
 namespace Client.Visuals
@@ -11,7 +12,7 @@ namespace Client.Visuals
 
         private readonly Dictionary<ulong, EnergyRuntime> energyNodes = new();
         private readonly Dictionary<ulong, TowerRuntime> towers = new();
-        private bool subscribedToGameEvents;
+        private readonly SubscriptionGroup subscriptions = new();
 
         public IReadOnlyDictionary<ulong, EnergyRuntime> EnergyNodes => energyNodes;
         public IReadOnlyDictionary<ulong, TowerRuntime> Towers => towers;
@@ -24,28 +25,29 @@ namespace Client.Visuals
                 return;
             }
             Instance = this;
+        }
 
-            if (!subscribedToGameEvents)
-            {
-                GameEvents.EnergySpawned += OnEnergySpawned;
-                GameEvents.EnergyDespawned += OnEnergyDespawned;
-                GameEvents.TowerSpawned += OnTowerSpawned;
-                GameEvents.TowerDespawned += OnTowerDespawned;
-                subscribedToGameEvents = true;
-            }
+        private void OnEnable()
+        {
+            subscriptions.Add(() => GameEvents.EnergySpawned += OnEnergySpawned,
+                () => GameEvents.EnergySpawned -= OnEnergySpawned);
+            subscriptions.Add(() => GameEvents.EnergyDespawned += OnEnergyDespawned,
+                () => GameEvents.EnergyDespawned -= OnEnergyDespawned);
+            subscriptions.Add(() => GameEvents.TowerSpawned += OnTowerSpawned,
+                () => GameEvents.TowerSpawned -= OnTowerSpawned);
+            subscriptions.Add(() => GameEvents.TowerDespawned += OnTowerDespawned,
+                () => GameEvents.TowerDespawned -= OnTowerDespawned);
+        }
+
+        private void OnDisable()
+        {
+            subscriptions.UnbindAll();
+            energyNodes.Clear();
+            towers.Clear();
         }
 
         private void OnDestroy()
         {
-            if (subscribedToGameEvents)
-            {
-                GameEvents.EnergySpawned -= OnEnergySpawned;
-                GameEvents.EnergyDespawned -= OnEnergyDespawned;
-                GameEvents.TowerSpawned -= OnTowerSpawned;
-                GameEvents.TowerDespawned -= OnTowerDespawned;
-                subscribedToGameEvents = false;
-            }
-
             if (Instance == this)
                 Instance = null;
         }

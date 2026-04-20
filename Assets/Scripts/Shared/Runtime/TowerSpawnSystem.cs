@@ -1,4 +1,3 @@
-using System;
 using Shared;
 using Shared.Data;
 using Shared.Utilities;
@@ -10,9 +9,6 @@ namespace Shared.Runtime
     public class TowerSpawnSystem : NetworkBehaviour
     {
         public static TowerSpawnSystem Instance { get; private set; }
-
-        public static event Action<ulong, TowerType, Vector2Int, Action<PlacementResult>> OnServerPlaceRequested;
-        public static event Action<string, Vector2Int, PlacementResult> PlacementResultReceived;
 
         private void Awake()
         {
@@ -48,26 +44,15 @@ namespace Shared.Runtime
                 return;
             }
 
-            if (OnServerPlaceRequested == null)
+            if (!ServerEvents.TryRaisePlaceTowerRequested(senderClientId, config, gridPos, out var requestResult))
             {
                 RuntimeLog.Placement.Error(RuntimeLog.Code.PlacementNoHandler,
-                    $"No server placement handler registered for client {senderClientId} request.");
+                    $"No valid server placement handler result for client {senderClientId}.");
                 SendPlacementResultClientRpc(senderClientId, towerConfigId, gridPos, PlacementResult.MissingDependencies);
                 return;
             }
 
-            PlacementResult? requestResult = null;
-            OnServerPlaceRequested.Invoke(senderClientId, config, gridPos, result => requestResult = result);
-
-            if (!requestResult.HasValue)
-            {
-                RuntimeLog.Placement.Error(RuntimeLog.Code.PlacementNoHandler,
-                    $"Server placement handler did not return a result for client {senderClientId}.");
-                SendPlacementResultClientRpc(senderClientId, towerConfigId, gridPos, PlacementResult.MissingDependencies);
-                return;
-            }
-
-            SendPlacementResultClientRpc(senderClientId, towerConfigId, gridPos, requestResult.Value);
+            SendPlacementResultClientRpc(senderClientId, towerConfigId, gridPos, requestResult);
         }
 
         [Rpc(SendTo.Everyone)]
@@ -80,8 +65,7 @@ namespace Shared.Runtime
             if (NetworkManager.Singleton == null || NetworkManager.Singleton.LocalClientId != requesterClientId)
                 return;
 
-            GameEvents.RaisePlacementResultReceived(towerConfigId, gridPos, result);
-            PlacementResultReceived?.Invoke(towerConfigId, gridPos, result);
+            ClientEvents.RaisePlacementResultReceived(towerConfigId, gridPos, result);
         }
     }
 }

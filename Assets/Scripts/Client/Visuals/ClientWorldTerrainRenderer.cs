@@ -21,7 +21,7 @@ namespace Client.Visuals
         private float lastAppliedWaterThreshold = float.NaN;
         private float lastAppliedWaterNoiseScale = float.NaN;
         private int lastAppliedWaterSmoothPasses = int.MinValue;
-        private bool subscribedToState;
+        private readonly SubscriptionGroup stateSubscriptions = new();
 
         private void OnEnable()
         {
@@ -47,7 +47,7 @@ namespace Client.Visuals
 
         private void OnDestroy()
         {
-            UnsubscribeFromStateChanges();
+            stateSubscriptions.UnbindAll();
 
             if (waterMeshObject != null)
                 Destroy(waterMeshObject);
@@ -72,20 +72,13 @@ namespace Client.Visuals
 
         private void SubscribeToStateChanges()
         {
-            if (subscribedToState || worldGenerationState == null)
+            if (worldGenerationState == null)
                 return;
 
-            worldGenerationState.SubscribeStateChanged(OnWorldStateChanged, replayCurrentState: true);
-            subscribedToState = true;
-        }
-
-        private void UnsubscribeFromStateChanges()
-        {
-            if (!subscribedToState || worldGenerationState == null)
-                return;
-
-            worldGenerationState.UnsubscribeStateChanged(OnWorldStateChanged);
-            subscribedToState = false;
+            stateSubscriptions.UnbindAll();
+            stateSubscriptions.Add(
+                () => worldGenerationState.SubscribeStateChanged(OnWorldStateChanged, replayCurrentState: true),
+                () => worldGenerationState.UnsubscribeStateChanged(OnWorldStateChanged));
         }
 
         private void TryApplyTerrainFromState()

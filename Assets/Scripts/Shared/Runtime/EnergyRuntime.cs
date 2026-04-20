@@ -1,5 +1,4 @@
 using Shared.Data;
-using System;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -7,9 +6,6 @@ namespace Shared.Runtime
 {
     public class EnergyRuntime : NetworkBehaviour
     {
-        public static event Action<EnergyRuntime> ServerSpawned;
-        public static event Action<EnergyRuntime> ServerDespawned;
-
         [Header("Configuration")]
         [SerializeField] private EnergyType config;
         [SerializeField] private int maxCapacity;
@@ -31,7 +27,7 @@ namespace Shared.Runtime
             if (IsServer)
             {
                 currentCapacity.Value = maxCapacity;
-                ServerSpawned?.Invoke(this);
+                ServerEvents.RaiseEnergySpawned(this);
             }
 
             GameEvents.RaiseEnergySpawned(this);
@@ -42,7 +38,7 @@ namespace Shared.Runtime
             GameEvents.RaiseEnergyDespawned(this);
 
             if (IsServer)
-                ServerDespawned?.Invoke(this);
+                ServerEvents.RaiseEnergyDespawned(this);
 
             base.OnNetworkDespawn();
         }

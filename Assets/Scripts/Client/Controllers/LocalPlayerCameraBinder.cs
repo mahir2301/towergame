@@ -1,3 +1,5 @@
+using Shared;
+using Shared.Runtime;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -6,21 +8,30 @@ namespace Client.Controllers
     public class LocalPlayerCameraBinder : MonoBehaviour
     {
         [SerializeField] private CinemachineCamera mainCamera;
-        [SerializeField] private LocalPlayerEntityResolver playerResolver;
 
-        private Transform currentTarget;
-
-        private void Update()
+        private void OnEnable()
         {
-            var player = playerResolver != null ? playerResolver.CurrentPlayer : null;
-            var target = player != null ? player.transform : null;
-            if (target == currentTarget || mainCamera == null)
+            ClientEvents.LocalPlayerChanged += OnLocalPlayerChanged;
+            ApplyTarget(ClientEvents.CurrentLocalPlayer);
+        }
+
+        private void OnDisable()
+        {
+            ClientEvents.LocalPlayerChanged -= OnLocalPlayerChanged;
+        }
+
+        private void OnLocalPlayerChanged(PlayerRuntime player)
+        {
+            ApplyTarget(player);
+        }
+
+        private void ApplyTarget(PlayerRuntime player)
+        {
+            if (mainCamera == null)
                 return;
 
-            currentTarget = target;
-
             var cameraTarget = mainCamera.Target;
-            cameraTarget.TrackingTarget = currentTarget;
+            cameraTarget.TrackingTarget = player != null ? player.transform : null;
             mainCamera.Target = cameraTarget;
         }
 
@@ -29,12 +40,6 @@ namespace Client.Controllers
             if (mainCamera == null)
             {
                 issue = "mainCamera is not assigned.";
-                return false;
-            }
-
-            if (playerResolver == null)
-            {
-                issue = "playerResolver is not assigned.";
                 return false;
             }
 

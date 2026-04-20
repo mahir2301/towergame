@@ -7,6 +7,9 @@ namespace Shared.Runtime
     {
         private event Action stateChanged;
 
+        public event Action ServerSpawned;
+        public event Action BecameReady;
+
         private readonly NetworkVariable<int> replicatedSeed = new(-1,
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server);
@@ -63,8 +66,14 @@ namespace Shared.Runtime
             waterNoiseScale.OnValueChanged += HandleStateValueChanged;
             waterSmoothPasses.OnValueChanged += HandleStateValueChanged;
 
+            if (IsServer)
+                ServerSpawned?.Invoke();
+
             if (HasValidState)
+            {
+                BecameReady?.Invoke();
                 stateChanged?.Invoke();
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -95,7 +104,17 @@ namespace Shared.Runtime
             if (!HasValidState)
                 return;
 
+            BecameReady?.Invoke();
             stateChanged?.Invoke();
+        }
+
+        public override void OnDestroy()
+        {
+            stateChanged = null;
+            ServerSpawned = null;
+            BecameReady = null;
+
+            base.OnDestroy();
         }
     }
 }

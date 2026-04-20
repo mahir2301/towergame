@@ -13,8 +13,7 @@ namespace Server.Managers
         public static ServerSpawnManager Instance { get; private set; }
 
         [SerializeField] private GridManager gridManager;
-
-        private bool subscribedToPlacementRequests;
+        private readonly SubscriptionGroup subscriptions = new();
 
         private void Awake()
         {
@@ -30,33 +29,25 @@ namespace Server.Managers
         {
             base.OnNetworkSpawn();
 
-            if (!IsServer || subscribedToPlacementRequests)
+            if (!IsServer)
                 return;
 
-            TowerSpawnSystem.OnServerPlaceRequested += HandlePlaceRequested;
-            subscribedToPlacementRequests = true;
+            subscriptions.UnbindAll();
+            subscriptions.Add(() => ServerEvents.PlaceTowerRequested += HandlePlaceRequested,
+                () => ServerEvents.PlaceTowerRequested -= HandlePlaceRequested);
         }
 
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-
-            if (!subscribedToPlacementRequests)
-                return;
-
-            TowerSpawnSystem.OnServerPlaceRequested -= HandlePlaceRequested;
-            subscribedToPlacementRequests = false;
+            subscriptions.UnbindAll();
         }
 
         public override void OnDestroy()
         {
             base.OnDestroy();
 
-            if (subscribedToPlacementRequests)
-            {
-                TowerSpawnSystem.OnServerPlaceRequested -= HandlePlaceRequested;
-                subscribedToPlacementRequests = false;
-            }
+            subscriptions.UnbindAll();
 
             if (Instance == this)
                 Instance = null;
@@ -168,6 +159,8 @@ namespace Server.Managers
                 netObj.Spawn();
                 gridManager.BindRuntimeNetId(record.Id, netObj.NetworkObjectId);
             }
+
+            EnergyNetworkManager.Instance?.TryConnectTowerToEnergy(instance);
 
             result = PlacementResult.Success;
             return true;

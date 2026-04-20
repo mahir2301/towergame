@@ -1,5 +1,4 @@
 using Shared.Data;
-using System;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -7,9 +6,6 @@ namespace Shared.Runtime
 {
     public class TowerRuntime : NetworkBehaviour
     {
-        public static event Action<TowerRuntime> ServerSpawned;
-        public static event Action<TowerRuntime> ServerDespawned;
-
         [Header("Configuration")]
         [SerializeField] private TowerType config;
 
@@ -37,7 +33,7 @@ namespace Shared.Runtime
             {
                 if (config != null)
                     currentHealth.Value = config.Stats.maxHealth;
-                ServerSpawned?.Invoke(this);
+                ServerEvents.RaiseTowerSpawned(this);
             }
 
             GameEvents.RaiseTowerSpawned(this);
@@ -48,7 +44,7 @@ namespace Shared.Runtime
             GameEvents.RaiseTowerDespawned(this);
 
             if (IsServer)
-                ServerDespawned?.Invoke(this);
+                ServerEvents.RaiseTowerDespawned(this);
 
             base.OnNetworkDespawn();
         }

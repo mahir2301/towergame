@@ -20,7 +20,8 @@ namespace Client.Visuals
         private Material material;
         private Color gridColorHidden;
         private bool gridVisible = true;
-        private bool subscribedToPhaseEvents;
+        private readonly SubscriptionGroup subscriptions = new();
+        private readonly SubscriptionGroup phaseSubscriptions = new();
 
         private void Awake()
         {
@@ -50,36 +51,37 @@ namespace Client.Visuals
             meshRenderer.material = material;
         }
 
-        private void Start()
+        private void OnEnable()
         {
+            subscriptions.Add(() => RuntimeBootstrap.StateChanged += OnBootstrapStateChanged,
+                () => RuntimeBootstrap.StateChanged -= OnBootstrapStateChanged);
+
             if (RuntimeBootstrap.IsReady)
                 SubscribeToPhaseEvents();
         }
 
-        private void Update()
+        private void OnDisable()
         {
-            if (!subscribedToPhaseEvents && RuntimeBootstrap.IsReady)
-                SubscribeToPhaseEvents();
+            subscriptions.UnbindAll();
+            phaseSubscriptions.UnbindAll();
         }
 
         private void OnDestroy()
         {
-            if (subscribedToPhaseEvents)
-            {
-                GameEvents.PhaseChanged -= OnPhaseChanged;
-                subscribedToPhaseEvents = false;
-            }
-
             if (material != null) Destroy(material);
+        }
+
+        private void OnBootstrapStateChanged(RuntimeBootstrapState state)
+        {
+            if (state == RuntimeBootstrapState.Ready)
+                SubscribeToPhaseEvents();
         }
 
         private void SubscribeToPhaseEvents()
         {
-            if (subscribedToPhaseEvents)
-                return;
-
-            GameEvents.PhaseChanged += OnPhaseChanged;
-            subscribedToPhaseEvents = true;
+            phaseSubscriptions.UnbindAll();
+            phaseSubscriptions.Add(() => GameEvents.PhaseChanged += OnPhaseChanged,
+                () => GameEvents.PhaseChanged -= OnPhaseChanged);
 
             var phaseManager = PhaseManager.Instance;
             if (phaseManager != null)
