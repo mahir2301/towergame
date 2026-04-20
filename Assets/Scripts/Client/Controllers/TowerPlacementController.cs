@@ -47,7 +47,7 @@ namespace Client.Controllers
 
         private void Update()
         {
-            if (!RuntimeNet.ShouldRunClientSystems())
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
                 return;
 
             if (!RuntimeBootstrap.IsReady)
@@ -141,7 +141,7 @@ namespace Client.Controllers
 
         public void OnPlaceTower(InputAction.CallbackContext context)
         {
-            if (!RuntimeNet.ShouldRunClientSystems())
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
                 return;
 
             if (!RuntimeBootstrap.IsReady)
@@ -155,7 +155,7 @@ namespace Client.Controllers
 
         public void TryPlaceTower()
         {
-            if (!RuntimeNet.ShouldRunClientSystems())
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
                 return;
 
             if (!RuntimeBootstrap.IsReady)

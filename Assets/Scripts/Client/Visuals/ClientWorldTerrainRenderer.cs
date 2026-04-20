@@ -29,7 +29,7 @@ namespace Client.Visuals
 
         private void Start()
         {
-            if (!RuntimeNet.ShouldRunClientSystems())
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
                 return;
 
             if (!EnsureStateReference())

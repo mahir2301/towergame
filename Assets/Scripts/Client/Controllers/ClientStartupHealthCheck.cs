@@ -1,4 +1,5 @@
 using Client.Visuals;
+using Shared.Runtime;
 using Shared.Utilities;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -11,8 +12,10 @@ namespace Client.Controllers
         private static void Run()
         {
             var sceneName = SceneManager.GetActiveScene().name;
+            if (sceneName != RuntimeSceneNames.Game)
+                return;
 
-            if (!RuntimeNet.ShouldRunClientSystems())
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
                 return;
 
             var hasError = false;

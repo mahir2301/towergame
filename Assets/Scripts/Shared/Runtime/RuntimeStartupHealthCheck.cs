@@ -13,6 +13,9 @@ namespace Shared.Runtime
         private static void Run()
         {
             var sceneName = SceneManager.GetActiveScene().name;
+            if (sceneName != RuntimeSceneNames.Game)
+                return;
+
             var hasError = false;
 
             if (GameRegistry.Instance == null)

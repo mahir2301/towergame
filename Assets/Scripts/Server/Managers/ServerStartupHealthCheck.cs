@@ -1,3 +1,4 @@
+using Shared.Runtime;
 using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,6 +12,11 @@ namespace Server.Managers
         private static void Run()
         {
             var sceneName = SceneManager.GetActiveScene().name;
+            if (sceneName != RuntimeSceneNames.Game)
+                return;
+
+            if (!RuntimeNet.IsServer)
+                return;
 
             var spawnManager = Object.FindFirstObjectByType<ServerSpawnManager>();
             if (spawnManager == null)

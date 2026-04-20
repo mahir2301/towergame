@@ -24,7 +24,7 @@ namespace Client.UI
             if (!SingletonUtility.TryAssign(Instance, this, value => Instance = value))
                 return;
 
-            if (!RuntimeNet.ShouldRunClientSystems())
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
             {
                 enabled = false;
                 return;

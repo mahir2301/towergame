@@ -3,7 +3,7 @@ using Client.UI;
 using Shared;
 using Shared.Grid;
 using Shared.Runtime;
-using Unity.Netcode;
+using Shared.Utilities;
 using UnityEngine;
 
 namespace Client.Visuals
@@ -19,6 +19,12 @@ namespace Client.Visuals
 
         private void OnEnable()
         {
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
+            {
+                enabled = false;
+                return;
+            }
+
             GameEvents.EnergySpawned += HandleEnergySpawned;
             GameEvents.EnergyDespawned += HandleEnergyDespawned;
             GameEvents.TowerSpawned += HandleTowerSpawned;
@@ -143,7 +149,7 @@ namespace Client.Visuals
 
         private static bool IsClientActive()
         {
-            return NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient;
+            return RuntimeNet.ShouldRunNetworkedClientSystems();
         }
 
         private static RangeIndicator CreateIndicator(Transform parent, string name)

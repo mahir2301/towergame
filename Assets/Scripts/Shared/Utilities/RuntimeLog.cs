@@ -12,6 +12,7 @@ namespace Shared.Utilities
         public static readonly LogChannel Overlay = new("[Overlay]");
         public static readonly LogChannel Visual = new("[Visual]");
         public static readonly LogChannel Entity = new("[Entity]");
+        public static readonly LogChannel Menu = new("[Menu]");
 
         public static class Code
         {
@@ -51,6 +52,18 @@ namespace Shared.Utilities
             public const string EntityMissingTypeId = "EN-010";
             public const string EntitySpawnFailed = "EN-011";
             public const string EntityActionRejected = "EN-012";
+            public const string MenuHostRequested = "MN-001";
+            public const string MenuJoinRequested = "MN-002";
+            public const string MenuTransportConfigured = "MN-003";
+            public const string MenuLoadGameScene = "MN-004";
+            public const string MenuClientConnected = "MN-005";
+            public const string MenuClientDisconnected = "MN-006";
+            public const string MenuNetworkUnavailable = "MN-007";
+            public const string MenuStartHostFailed = "MN-008";
+            public const string MenuStartClientFailed = "MN-009";
+            public const string MenuSessionAlreadyRunning = "MN-010";
+            public const string MenuServerStarted = "MN-011";
+            public const string MenuMissingTransport = "MN-012";
         }
 
         public readonly struct LogChannel

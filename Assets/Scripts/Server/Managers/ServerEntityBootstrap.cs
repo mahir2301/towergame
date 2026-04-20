@@ -16,6 +16,12 @@ namespace Server.Managers
 
         private void Start()
         {
+            if (!RuntimeNet.IsServer)
+            {
+                enabled = false;
+                return;
+            }
+
             if (!TryBindNetworkHooks())
             {
                 RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,

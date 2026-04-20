@@ -11,7 +11,7 @@ namespace Client.Visuals
 
         private void LateUpdate()
         {
-            if (!RuntimeNet.IsClient)
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
                 return;
 
             RefreshLines();

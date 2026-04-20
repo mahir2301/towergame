@@ -19,6 +19,12 @@ namespace Client.Visuals
 
         private void Awake()
         {
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
+            {
+                enabled = false;
+                return;
+            }
+
             if (!SingletonUtility.TryAssign(Instance, this, value => Instance = value))
                 return;
         }

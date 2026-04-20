@@ -17,6 +17,12 @@ namespace Server.Managers
 
         private void Awake()
         {
+            if (!RuntimeNet.IsServer)
+            {
+                enabled = false;
+                return;
+            }
+
             if (!SingletonUtility.TryAssign(Instance, this, value => Instance = value))
                 return;
         }

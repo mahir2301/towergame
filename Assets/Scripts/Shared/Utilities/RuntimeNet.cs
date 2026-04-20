@@ -8,9 +8,19 @@ namespace Shared.Utilities
         public static bool IsClient => NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient;
         public static bool IsListening => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
-        public static bool ShouldRunClientSystems()
+        public static bool ShouldRunNetworkedClientSystems()
+        {
+            return IsListening && IsClient;
+        }
+
+        public static bool ShouldRunMenuSystems()
         {
             return !IsListening || IsClient;
+        }
+
+        public static bool ShouldRunClientSystems()
+        {
+            return ShouldRunMenuSystems();
         }
 
         public static bool IsLocalClient(ulong clientId)

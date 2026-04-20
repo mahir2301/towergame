@@ -24,7 +24,7 @@ namespace Client.Visuals
 
         private void Awake()
         {
-            if (!RuntimeNet.ShouldRunClientSystems())
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
             {
                 enabled = false;
                 return;

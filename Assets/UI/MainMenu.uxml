@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="MainMenu.uss" />
+    <ui:VisualElement name="menu-root" class="menu-root">
+        <ui:VisualElement class="menu-panel">
+            <ui:Label name="menu-title" class="menu-title" text="Towergame" />
+            <ui:Label name="menu-subtitle" class="menu-subtitle" text="Use the default LAN endpoint (127.0.0.1:7777)." />
+
+            <ui:VisualElement class="actions-row">
+                <ui:Button name="host-button" class="menu-button host" text="Host LAN" />
+                <ui:Button name="join-button" class="menu-button join" text="Join LAN" />
+            </ui:VisualElement>
+
+            <ui:Label name="status-label" class="status-label" text="Choose Host LAN to start or Join LAN to connect." />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

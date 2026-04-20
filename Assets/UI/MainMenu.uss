@@ -1,0 +1,71 @@
+.menu-root {
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(10, 17, 24, 0.9);
+}
+
+.menu-panel {
+    width: 420px;
+    max-width: 92%;
+    padding: 22px;
+    border-radius: 14px;
+    border-width: 1px;
+    border-color: rgba(132, 176, 225, 0.45);
+    background-color: rgba(14, 20, 27, 0.92);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+    gap: 10px;
+}
+
+.menu-title {
+    font-size: 30px;
+    color: rgba(232, 242, 252, 1);
+    -unity-font-style: bold;
+    letter-spacing: 0.6px;
+}
+
+.menu-subtitle {
+    font-size: 12px;
+    color: rgba(156, 177, 199, 1);
+    margin-bottom: 8px;
+}
+
+.actions-row {
+    flex-direction: row;
+    gap: 8px;
+}
+
+.menu-button {
+    flex-grow: 1;
+    min-height: 34px;
+    border-radius: 7px;
+    border-width: 1px;
+    color: rgba(242, 247, 255, 1);
+    -unity-font-style: bold;
+}
+
+.menu-button.host {
+    background-color: rgba(36, 114, 76, 0.9);
+    border-color: rgba(88, 198, 136, 0.85);
+}
+
+.menu-button.host:hover {
+    background-color: rgba(45, 132, 89, 0.94);
+}
+
+.menu-button.join {
+    background-color: rgba(41, 90, 145, 0.9);
+    border-color: rgba(106, 164, 228, 0.85);
+}
+
+.menu-button.join:hover {
+    background-color: rgba(50, 106, 168, 0.94);
+}
+
+.status-label {
+    margin-top: 8px;
+    min-height: 18px;
+    font-size: 11px;
+    color: rgba(176, 201, 226, 1);
+}

@@ -55,7 +55,7 @@ namespace Shared.Runtime
         private void SendPlacementResultClientRpc(ulong requesterClientId, string towerConfigId, Vector2Int gridPos,
             PlacementResult result)
         {
-            if (!RuntimeNet.IsClient)
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
                 return;
 
             if (!RuntimeNet.IsLocalClient(requesterClientId))

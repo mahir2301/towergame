@@ -28,7 +28,7 @@ namespace Client.UI
 
         private void Start()
         {
-            if (!RuntimeNet.ShouldRunClientSystems())
+            if (!RuntimeNet.ShouldRunNetworkedClientSystems())
             {
                 enabled = false;
                 return;
