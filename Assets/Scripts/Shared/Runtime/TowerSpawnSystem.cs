@@ -12,26 +12,22 @@ namespace Shared.Runtime
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
+            if (!SingletonUtility.TryAssign(Instance, this, value => Instance = value))
                 return;
-            }
-            Instance = this;
         }
 
         public override void OnDestroy()
         {
             base.OnDestroy();
 
-            if (Instance == this)
-                Instance = null;
+            SingletonUtility.ClearIfCurrent(Instance, this, () => Instance = null);
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestPlaceTowerServerRpc(string towerConfigId, Vector2Int gridPos, RpcParams rpcParams = default)
         {
-            if (!IsServer) return;
+            if (!RuntimeNet.IsServer)
+                return;
 
             var senderClientId = rpcParams.Receive.SenderClientId;
 
@@ -59,10 +55,10 @@ namespace Shared.Runtime
         private void SendPlacementResultClientRpc(ulong requesterClientId, string towerConfigId, Vector2Int gridPos,
             PlacementResult result)
         {
-            if (!IsClient)
+            if (!RuntimeNet.IsClient)
                 return;
 
-            if (NetworkManager.Singleton == null || NetworkManager.Singleton.LocalClientId != requesterClientId)
+            if (!RuntimeNet.IsLocalClient(requesterClientId))
                 return;
 
             ClientEvents.RaisePlacementResultReceived(towerConfigId, gridPos, result);

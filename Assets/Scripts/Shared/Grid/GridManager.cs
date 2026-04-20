@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Shared.Utilities;
 using UnityEngine;
 
 namespace Shared.Grid
@@ -42,20 +43,15 @@ namespace Shared.Grid
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
+            if (!SingletonUtility.TryAssign(Instance, this, value => Instance = value))
                 return;
-            }
 
-            Instance = this;
             EnsureTerrainMap();
         }
 
         private void OnDestroy()
         {
-            if (Instance == this)
-                Instance = null;
+            SingletonUtility.ClearIfCurrent(Instance, this, () => Instance = null);
         }
 
         public void ClearWorldState()

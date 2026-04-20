@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Client.Controllers;
 using Shared;
 using Shared.Data;
-using Unity.Netcode;
+using Shared.Utilities;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
@@ -28,7 +28,7 @@ namespace Client.UI
 
         private void Start()
         {
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
+            if (!RuntimeNet.ShouldRunClientSystems())
             {
                 enabled = false;
                 return;

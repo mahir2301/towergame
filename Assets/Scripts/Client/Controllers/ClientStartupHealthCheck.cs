@@ -1,6 +1,5 @@
 using Client.Visuals;
 using Shared.Utilities;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -13,8 +12,7 @@ namespace Client.Controllers
         {
             var sceneName = SceneManager.GetActiveScene().name;
 
-            var networkManager = NetworkManager.Singleton;
-            if (networkManager != null && networkManager.IsListening && !networkManager.IsClient)
+            if (!RuntimeNet.ShouldRunClientSystems())
                 return;
 
             var hasError = false;

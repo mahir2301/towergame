@@ -18,14 +18,11 @@ namespace Server.Managers
         private readonly Dictionary<ulong, ulong> towerToEnergy = new();
         private readonly SubscriptionGroup subscriptions = new();
 
-        private static bool IsServerRuntime
-            => NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
-
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
 
-            if (!IsServerRuntime)
+            if (!RuntimeNet.IsServer)
                 return;
 
             BootstrapFromSpawnedRuntimes();
@@ -33,12 +30,8 @@ namespace Server.Managers
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
+            if (!SingletonUtility.TryAssign(Instance, this, value => Instance = value))
                 return;
-            }
-            Instance = this;
 
             subscriptions.Add(() => ServerEvents.EnergySpawned += RegisterEnergyRuntime,
                 () => ServerEvents.EnergySpawned -= RegisterEnergyRuntime);
@@ -66,8 +59,7 @@ namespace Server.Managers
 
             subscriptions.UnbindAll();
 
-            if (Instance == this)
-                Instance = null;
+            SingletonUtility.ClearIfCurrent(Instance, this, () => Instance = null);
         }
 
         private void RegisterEnergyRuntime(EnergyRuntime runtime)
@@ -116,7 +108,7 @@ namespace Server.Managers
 
         public bool TryConnectTowerToEnergy(TowerRuntime tower)
         {
-            if (!IsServerRuntime || tower == null)
+            if (!RuntimeNet.IsServer || tower == null)
                 return false;
 
             if (energyNodes.Count == 0)
@@ -147,7 +139,7 @@ namespace Server.Managers
 
         private void BootstrapFromSpawnedRuntimes()
         {
-            if (!IsServerRuntime)
+            if (!RuntimeNet.IsServer)
                 return;
 
             energyNodes.Clear();
@@ -177,7 +169,7 @@ namespace Server.Managers
 
         public void DisconnectTower(TowerRuntime tower)
         {
-            if (!IsServerRuntime) return;
+            if (!RuntimeNet.IsServer) return;
 
             var towerId = tower.NetworkObjectId;
             var config = tower.Config;
@@ -226,7 +218,7 @@ namespace Server.Managers
 
         public bool IsPositionInRange(Vector2Int pos, ClassType classType, int energyCost)
         {
-            if (!IsServerRuntime)
+            if (!RuntimeNet.IsServer)
                 return false;
 
             foreach (var energy in energyNodes)
@@ -255,7 +247,7 @@ namespace Server.Managers
 
         public float GetEnergyRangeForPosition(Vector2Int pos, ClassType classType, int energyCost)
         {
-            if (!IsServerRuntime)
+            if (!RuntimeNet.IsServer)
                 return -1f;
 
             var best = -1f;

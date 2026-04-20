@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Shared.Runtime;
 using Shared.Utilities;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -22,10 +21,10 @@ namespace Client.UI
 
         private void Awake()
         {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-            Instance = this;
+            if (!SingletonUtility.TryAssign(Instance, this, value => Instance = value))
+                return;
 
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
+            if (!RuntimeNet.ShouldRunClientSystems())
             {
                 enabled = false;
                 return;
@@ -50,7 +49,7 @@ namespace Client.UI
 
         private void OnDestroy()
         {
-            if (Instance == this) Instance = null;
+            SingletonUtility.ClearIfCurrent(Instance, this, () => Instance = null);
         }
 
         public void RegisterEnergy(EnergyRuntime energy)

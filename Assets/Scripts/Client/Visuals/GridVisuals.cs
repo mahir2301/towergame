@@ -2,7 +2,6 @@ using Shared;
 using Shared.Runtime;
 using Shared.Utilities;
 using UnityEngine;
-using Unity.Netcode;
 
 namespace Client.Visuals
 {
@@ -25,7 +24,7 @@ namespace Client.Visuals
 
         private void Awake()
         {
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
+            if (!RuntimeNet.ShouldRunClientSystems())
             {
                 enabled = false;
                 return;

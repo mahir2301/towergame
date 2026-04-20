@@ -1,4 +1,5 @@
 using Shared.Data;
+using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -61,7 +62,9 @@ namespace Shared.Runtime
 
         public void DisconnectTower(ulong towerNetId, int energyCost)
         {
-            if (!IsServer) return;
+            if (!RuntimeNet.IsServer)
+                return;
+
             currentCapacity.Value = Mathf.Min(currentCapacity.Value + energyCost, maxCapacity);
         }
 

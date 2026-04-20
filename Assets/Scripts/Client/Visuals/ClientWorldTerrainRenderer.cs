@@ -3,7 +3,6 @@ using Shared.Determinism;
 using Shared.Grid;
 using Shared.Runtime;
 using Shared.Utilities;
-using Unity.Netcode;
 using UnityEngine;
 
 namespace Client.Visuals
@@ -30,7 +29,7 @@ namespace Client.Visuals
 
         private void Start()
         {
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
+            if (!RuntimeNet.ShouldRunClientSystems())
                 return;
 
             if (!EnsureStateReference())
@@ -184,20 +183,9 @@ namespace Client.Visuals
 
         public bool HasRequiredReferences(out string issue)
         {
-            if (worldGenerationState == null)
-            {
-                issue = "worldGenerationState is not assigned.";
-                return false;
-            }
-
-            if (waterMaterial == null)
-            {
-                issue = "waterMaterial is not assigned.";
-                return false;
-            }
-
-            issue = null;
-            return true;
+            return ReferenceValidator.Validate(out issue,
+                (worldGenerationState, nameof(worldGenerationState)),
+                (waterMaterial, nameof(waterMaterial)));
         }
 
         private static Mesh BuildWaterMesh(HashSet<Vector2Int> waterCells)

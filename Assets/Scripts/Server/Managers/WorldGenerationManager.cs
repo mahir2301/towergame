@@ -37,7 +37,7 @@ namespace Server.Managers
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            if (!IsServer)
+            if (!RuntimeNet.IsServer)
                 return;
 
             if (!HasRequiredReferences(out var issue))
@@ -192,26 +192,10 @@ namespace Server.Managers
 
         public bool HasRequiredReferences(out string issue)
         {
-            if (gridManager == null)
-            {
-                issue = "gridManager is not assigned.";
-                return false;
-            }
-
-            if (worldGenerationState == null)
-            {
-                issue = "worldGenerationState is not assigned.";
-                return false;
-            }
-
-            if (serverSpawnManager == null)
-            {
-                issue = "serverSpawnManager is not assigned.";
-                return false;
-            }
-
-            issue = null;
-            return true;
+            return ReferenceValidator.Validate(out issue,
+                (gridManager, nameof(gridManager)),
+                (worldGenerationState, nameof(worldGenerationState)),
+                (serverSpawnManager, nameof(serverSpawnManager)));
         }
     }
 }

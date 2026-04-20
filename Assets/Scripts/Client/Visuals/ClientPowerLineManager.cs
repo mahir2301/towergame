@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Shared.Runtime;
-using Unity.Netcode;
+using Shared.Utilities;
 using UnityEngine;
 
 namespace Client.Visuals
@@ -11,7 +11,7 @@ namespace Client.Visuals
 
         private void LateUpdate()
         {
-            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
+            if (!RuntimeNet.IsClient)
                 return;
 
             RefreshLines();

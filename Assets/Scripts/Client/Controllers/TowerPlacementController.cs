@@ -4,7 +4,6 @@ using Shared.Data;
 using Shared.Grid;
 using Shared.Runtime;
 using Shared.Utilities;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
@@ -48,7 +47,7 @@ namespace Client.Controllers
 
         private void Update()
         {
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
+            if (!RuntimeNet.ShouldRunClientSystems())
                 return;
 
             if (!RuntimeBootstrap.IsReady)
@@ -142,7 +141,7 @@ namespace Client.Controllers
 
         public void OnPlaceTower(InputAction.CallbackContext context)
         {
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
+            if (!RuntimeNet.ShouldRunClientSystems())
                 return;
 
             if (!RuntimeBootstrap.IsReady)
@@ -156,7 +155,7 @@ namespace Client.Controllers
 
         public void TryPlaceTower()
         {
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsClient)
+            if (!RuntimeNet.ShouldRunClientSystems())
                 return;
 
             if (!RuntimeBootstrap.IsReady)

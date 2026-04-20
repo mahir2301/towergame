@@ -17,6 +17,7 @@
 
 ## Startup and Flow
 - `NetworkStarter` auto-starts host in `Start()` by default.
+- No dedicated/headless server runtime path; networking model is host + clients only.
 - `RuntimeBootstrap` owns readiness (`Initializing`/`Ready`) and emits `StateChanged`; avoid polling `IsReady` in Update when an event subscription can be used.
 - World generation is server-authoritative and event-driven:
   - `WorldGenerationManager` waits for `WorldGenerationState.ServerSpawned`.

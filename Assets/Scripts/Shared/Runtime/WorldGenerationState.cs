@@ -1,4 +1,5 @@
 using System;
+using Shared.Utilities;
 using Unity.Netcode;
 
 namespace Shared.Runtime
@@ -89,7 +90,7 @@ namespace Shared.Runtime
 
         public void SetServerValues(int seed, int minEdge, float threshold, float noiseScale, int smoothPasses)
         {
-            if (!IsServer)
+            if (!RuntimeNet.IsServer)
                 return;
 
             minDistanceFromEdge.Value = minEdge;

@@ -161,7 +161,9 @@ namespace Shared.Runtime
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         private void SubmitMoveCommandServerRpc(PlayerMoveCommand command, RpcParams rpcParams = default)
         {
-            if (!IsServer) return;
+            if (!RuntimeNet.IsServer)
+                return;
+
             if (!HasCommandAuthority(rpcParams.Receive.SenderClientId)) return;
             if (!IsMoveCommandFresh(command)) return;
 
@@ -216,7 +218,9 @@ namespace Shared.Runtime
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         private void SubmitActionCommandServerRpc(PlayerActionCommand command, RpcParams rpcParams = default)
         {
-            if (!IsServer) return;
+            if (!RuntimeNet.IsServer)
+                return;
+
             if (!HasCommandAuthority(rpcParams.Receive.SenderClientId)) return;
             if (!IsActionCommandFresh(command))
             {

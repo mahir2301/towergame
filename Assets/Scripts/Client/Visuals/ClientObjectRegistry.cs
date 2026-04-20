@@ -19,12 +19,8 @@ namespace Client.Visuals
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
+            if (!SingletonUtility.TryAssign(Instance, this, value => Instance = value))
                 return;
-            }
-            Instance = this;
         }
 
         private void OnEnable()
@@ -48,8 +44,7 @@ namespace Client.Visuals
 
         private void OnDestroy()
         {
-            if (Instance == this)
-                Instance = null;
+            SingletonUtility.ClearIfCurrent(Instance, this, () => Instance = null);
         }
 
         private void OnEnergySpawned(EnergyRuntime energy)

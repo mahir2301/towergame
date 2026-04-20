@@ -15,21 +15,15 @@ namespace Shared
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
+            if (!SingletonUtility.TryAssign(Instance, this, value => Instance = value))
                 return;
-            }
-
-            Instance = this;
         }
 
         public override void OnDestroy()
         {
             base.OnDestroy();
 
-            if (Instance == this)
-                Instance = null;
+            SingletonUtility.ClearIfCurrent(Instance, this, () => Instance = null);
         }
 
         public override void OnNetworkSpawn()
@@ -66,10 +60,8 @@ namespace Shared
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestSetPhaseRpc(GamePhase phase)
         {
-            if (!IsServer)
-            {
+            if (!RuntimeNet.IsServer)
                 return;
-            }
 
             currentPhase.Value = phase;
         }

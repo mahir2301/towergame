@@ -1,4 +1,5 @@
 using Shared.Data;
+using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -58,7 +59,9 @@ namespace Shared.Runtime
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void TakeDamageServerRpc(float amount)
         {
-            if (!IsServer) return;
+            if (!RuntimeNet.IsServer)
+                return;
+
             currentHealth.Value = Mathf.Max(0, currentHealth.Value - amount);
         }
 
@@ -77,7 +80,8 @@ namespace Shared.Runtime
 
         public void SetConnection(ulong energyId, ulong antennaId)
         {
-            if (!IsServer) return;
+            if (!RuntimeNet.IsServer)
+                return;
 
             connectedEnergyId.Value = energyId;
             connectedViaAntennaId.Value = antennaId;
@@ -86,7 +90,8 @@ namespace Shared.Runtime
 
         public void ClearConnection()
         {
-            if (!IsServer) return;
+            if (!RuntimeNet.IsServer)
+                return;
 
             connectedEnergyId.Value = ulong.MaxValue;
             connectedViaAntennaId.Value = ulong.MaxValue;

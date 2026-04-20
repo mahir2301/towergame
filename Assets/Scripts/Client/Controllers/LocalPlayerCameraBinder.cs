@@ -1,5 +1,6 @@
 using Shared;
 using Shared.Runtime;
+using Shared.Utilities;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -37,14 +38,8 @@ namespace Client.Controllers
 
         public bool HasRequiredReferences(out string issue)
         {
-            if (mainCamera == null)
-            {
-                issue = "mainCamera is not assigned.";
-                return false;
-            }
-
-            issue = null;
-            return true;
+            return ReferenceValidator.Validate(out issue,
+                (mainCamera, nameof(mainCamera)));
         }
     }
 }
