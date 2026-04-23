@@ -17,6 +17,7 @@ namespace Shared.Data
         [SerializeField] private List<TowerType> towerTypes = new();
         [SerializeField] private List<WeaponType> weaponTypes = new();
         [SerializeField] private List<EntityType> entityTypes = new();
+        [SerializeField] private List<NexusType> nexusTypes = new();
 
         private Dictionary<string, TowerType> _towerLookup;
         private Dictionary<string, EnergyType> _energyLookup;
@@ -24,12 +25,14 @@ namespace Shared.Data
         private Dictionary<string, WeaponType> _weaponLookup;
         private Dictionary<string, EntityType> _entityLookup;
         private Dictionary<EntityKind, EntityType> _entityKindLookup;
+        private Dictionary<string, NexusType> _nexusLookup;
 
         public IReadOnlyList<TowerType> TowerTypes => towerTypes;
         public IReadOnlyList<EnergyType> EnergyTypes => energyTypes;
         public IReadOnlyList<ClassType> ClassTypes => classTypes;
         public IReadOnlyList<WeaponType> WeaponTypes => weaponTypes;
         public IReadOnlyList<EntityType> EntityTypes => entityTypes;
+        public IReadOnlyList<NexusType> NexusTypes => nexusTypes;
 
         private void EnsureInitialized()
         {
@@ -40,6 +43,7 @@ namespace Shared.Data
             _weaponLookup = BuildLookup(weaponTypes);
             _entityLookup = BuildLookup(entityTypes);
             _entityKindLookup = BuildEntityKindLookup(entityTypes);
+            _nexusLookup = BuildLookup(nexusTypes);
         }
 
         private static Dictionary<string, T> BuildLookup<T>(List<T> items) where T : ScriptableObject, IRegistryType
@@ -133,6 +137,26 @@ namespace Shared.Data
             return _entityKindLookup.TryGetValue(kind, out var type) ? type : null;
         }
 
+        public NexusType GetNexusType(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return null;
+
+            EnsureInitialized();
+            return _nexusLookup.TryGetValue(id, out var type) ? type : null;
+        }
+
+        public NexusType GetNexusType()
+        {
+            EnsureInitialized();
+            for (var i = 0; i < nexusTypes.Count; i++)
+            {
+                if (nexusTypes[i] != null)
+                    return nexusTypes[i];
+            }
+            return null;
+        }
+
         public bool HasId(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -143,7 +167,8 @@ namespace Shared.Data
                    || _energyLookup.ContainsKey(id)
                    || _classLookup.ContainsKey(id)
                    || _weaponLookup.ContainsKey(id)
-                   || _entityLookup.ContainsKey(id);
+                   || _entityLookup.ContainsKey(id)
+                   || _nexusLookup.ContainsKey(id);
         }
 
         public bool ValidateAllTypes(out string issue)
@@ -164,6 +189,9 @@ namespace Shared.Data
                 return false;
 
             if (!ValidateRequiredEntityKinds(out issue))
+                return false;
+
+            if (!ValidateNexusTypes(out issue))
                 return false;
 
             issue = null;
@@ -350,6 +378,51 @@ namespace Shared.Data
             return true;
         }
 
+        public bool ValidateNexusTypes(out string issue)
+        {
+            if (!ValidateTypeList(
+                    nexusTypes,
+                    "NexusTypes",
+                    "NexusType",
+                    (NexusType type, out string localIssue) =>
+                    {
+                        if (type.Prefab == null)
+                        {
+                            localIssue = $"NexusType '{type.Id}' is missing a prefab.";
+                            return false;
+                        }
+
+                        if (type.MaxHealth <= 0f)
+                        {
+                            localIssue = $"NexusType '{type.Id}' has invalid maxHealth {type.MaxHealth}.";
+                            return false;
+                        }
+
+                        localIssue = null;
+                        return true;
+                    },
+                    out issue))
+            {
+                return false;
+            }
+
+            var count = 0;
+            for (var i = 0; i < nexusTypes.Count; i++)
+            {
+                if (nexusTypes[i] != null)
+                    count++;
+            }
+
+            if (count != 1)
+            {
+                issue = $"Expected exactly 1 NexusType but found {count}. Only one nexus is allowed per game.";
+                return false;
+            }
+
+            issue = null;
+            return true;
+        }
+
         private bool ValidateTypeList<T>(List<T> items, string listName, string typeName,
             ValidationRule<T> validationRule, out string issue)
             where T : ScriptableObject, IRegistryType
@@ -412,12 +485,14 @@ namespace Shared.Data
             towerTypes = FindAssets<TowerType>();
             weaponTypes = FindAssets<WeaponType>();
             entityTypes = FindAssets<EntityType>();
+            nexusTypes = FindAssets<NexusType>();
             _towerLookup = null;
             _energyLookup = null;
             _classLookup = null;
             _weaponLookup = null;
             _entityLookup = null;
             _entityKindLookup = null;
+            _nexusLookup = null;
             UnityEditor.EditorUtility.SetDirty(this);
         }
 

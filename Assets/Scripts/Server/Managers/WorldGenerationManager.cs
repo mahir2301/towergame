@@ -12,6 +12,9 @@ namespace Server.Managers
 {
     public class WorldGenerationManager : NetworkBehaviour
     {
+        [Header("Nexus")]
+        [SerializeField] private int nexusExclusionZone = 8;
+
         [Header("Terrain")]
         [SerializeField] private int minDistanceFromEdge = 3;
         [SerializeField] private float waterThreshold = 0.62f;
@@ -33,6 +36,7 @@ namespace Server.Managers
 
         private int generatedSeed = -1;
         private bool statePublished;
+        private Vector2Int nexusCenter;
 
         public override void OnNetworkSpawn()
         {
@@ -76,6 +80,19 @@ namespace Server.Managers
 
             try
             {
+                SpawnNexus(seed);
+                RuntimeLog.WorldGen.Info(RuntimeLog.Code.WorldGenNexusDone,
+                    "Nexus spawn complete.");
+            }
+            catch (Exception ex)
+            {
+                RuntimeLog.WorldGen.Error(RuntimeLog.Code.WorldGenNexusFailed,
+                    $"Nexus spawn failed: {ex}");
+                return;
+            }
+
+            try
+            {
                 GenerateTerrain(seed);
                 RuntimeLog.WorldGen.Info(RuntimeLog.Code.WorldGenTerrainDone,
                     "Terrain generation complete.");
@@ -104,6 +121,30 @@ namespace Server.Managers
             PublishWorldState();
         }
 
+        private void SpawnNexus(int seed)
+        {
+            var registry = GameRegistry.Instance;
+            if (registry == null)
+                throw new InvalidOperationException("GameRegistry is missing at Resources/GameRegistry.");
+
+            var nexusConfig = registry.GetNexusType();
+            if (nexusConfig == null)
+                throw new InvalidOperationException("No NexusType found in GameRegistry.");
+
+            var size = gridManager.GridSize;
+            nexusCenter = new Vector2Int(size.x / 2, size.y / 2);
+            var halfSize = NexusRuntime.NexusSize / 2;
+            var gridPos = new Vector2Int(nexusCenter.x - halfSize, nexusCenter.y - halfSize);
+
+            RuntimeLog.WorldGen.Info(RuntimeLog.Code.WorldGenNexusDone,
+                $"Spawning nexus: gridSize={size}, center={nexusCenter}, gridPos={gridPos}, " +
+                $"prefab={nexusConfig.Prefab != null}, hasNexusRuntime={nexusConfig.Prefab?.GetComponent<NexusRuntime>() != null}, " +
+                $"cellsAvailable={gridManager.IsCellAvailable(gridPos, new Vector2Int(NexusRuntime.NexusSize, NexusRuntime.NexusSize), false)}.");
+
+            if (!serverSpawnManager.TryPlaceNexusRuntime(gridPos, nexusConfig, out _))
+                throw new InvalidOperationException($"Failed to place nexus at {gridPos}.");
+        }
+
         private void PublishWorldState()
         {
             worldGenerationState.SetServerValues(generatedSeed, minDistanceFromEdge, waterThreshold, waterNoiseScale,
@@ -118,7 +159,7 @@ namespace Server.Managers
             var random = new System.Random(seed);
             var size = gridManager.GridSize;
             var waterCells = GridWaterGenerator.Generate(size, minDistanceFromEdge, waterNoiseScale, waterThreshold,
-                waterSmoothPasses, random);
+                waterSmoothPasses, random, nexusCenter, nexusExclusionZone);
             gridManager.SetTerrainCells(waterCells);
         }
 
@@ -138,7 +179,9 @@ namespace Server.Managers
                 minDistanceBetweenNodes,
                 defaultMaxCapacity,
                 maxAttemptsPerNode,
-                edgePadding);
+                edgePadding,
+                nexusCenter,
+                nexusExclusionZone);
         }
 
         private EnergyType[] ResolveEnergyTypes()

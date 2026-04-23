@@ -11,6 +11,8 @@ namespace Shared
         public static event Action<EnergyRuntime> EnergyDespawned;
         public static event Action<TowerRuntime> TowerSpawned;
         public static event Action<TowerRuntime> TowerDespawned;
+        public static event Action<NexusRuntime> NexusSpawned;
+        public static event Action<NexusRuntime> NexusDespawned;
         public static event Action<GamePhase> PhaseChanged;
         public static event Action<PlayerRuntime, Vector3, string> WeaponFired;
         public static event Action<PlayerRuntime, int> WeaponSwitched;
@@ -23,6 +25,8 @@ namespace Shared
         public static void RaiseEnergyDespawned(EnergyRuntime energy) => EnergyDespawned?.Invoke(energy);
         public static void RaiseTowerSpawned(TowerRuntime tower) => TowerSpawned?.Invoke(tower);
         public static void RaiseTowerDespawned(TowerRuntime tower) => TowerDespawned?.Invoke(tower);
+        public static void RaiseNexusSpawned(NexusRuntime nexus) => NexusSpawned?.Invoke(nexus);
+        public static void RaiseNexusDespawned(NexusRuntime nexus) => NexusDespawned?.Invoke(nexus);
         public static void RaisePhaseChanged(GamePhase phase) => PhaseChanged?.Invoke(phase);
         public static void RaiseWeaponFired(PlayerRuntime player, Vector3 target, string weaponId) => WeaponFired?.Invoke(player, target, weaponId);
         public static void RaiseWeaponSwitched(PlayerRuntime player, int weaponIndex) => WeaponSwitched?.Invoke(player, weaponIndex);

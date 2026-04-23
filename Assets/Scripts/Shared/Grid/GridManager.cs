@@ -15,6 +15,7 @@ namespace Shared.Grid
         Unknown = 0,
         EnergySource = 1,
         Tower = 2,
+        Nexus = 3,
     }
 
     public sealed class GridObjectRecord

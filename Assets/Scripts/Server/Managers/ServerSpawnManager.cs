@@ -110,6 +110,52 @@ namespace Server.Managers
             return true;
         }
 
+        public bool TryPlaceNexusRuntime(Vector2Int gridPos, NexusType config, out NexusRuntime instance)
+        {
+            instance = null;
+            if (!RuntimeNet.IsServer)
+                return false;
+
+            if (config?.Prefab == null)
+            {
+                RuntimeLog.WorldGen.Error(RuntimeLog.Code.WorldGenNexusFailed,
+                    "TryPlaceNexusRuntime: config or Prefab is null.");
+                return false;
+            }
+
+            var prefab = config.Prefab.GetComponent<NexusRuntime>();
+            if (prefab == null)
+            {
+                RuntimeLog.WorldGen.Error(RuntimeLog.Code.WorldGenNexusFailed,
+                    $"TryPlaceNexusRuntime: prefab '{config.Prefab.name}' has no NexusRuntime component.");
+                return false;
+            }
+
+            var size = prefab.Size;
+            if (!gridManager.TryRegisterOccupancy(GridObjectKind.Nexus, gridPos, size, false,
+                    config.Id, out var record))
+            {
+                RuntimeLog.WorldGen.Error(RuntimeLog.Code.WorldGenNexusFailed,
+                    $"TryPlaceNexusRuntime: TryRegisterOccupancy failed at {gridPos} size={size}. " +
+                    $"IsValid={gridManager.IsValidPosition(gridPos)}, " +
+                    $"Cells free={gridManager.IsCellAvailable(gridPos, size, false)}.");
+                return false;
+            }
+
+            instance = Object.Instantiate(prefab, gridManager.GridToWorld(gridPos, size), Quaternion.identity);
+            instance.Initialize(config, gridPos);
+            gridManager.BindRuntimeObject(record.Id, instance.gameObject);
+
+            var netObj = instance.GetComponent<NetworkObject>();
+            if (netObj != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                netObj.Spawn();
+                gridManager.BindRuntimeNetId(record.Id, netObj.NetworkObjectId);
+            }
+
+            return true;
+        }
+
         public bool TryPlaceTowerRuntime(Vector2Int gridPos, TowerType config, out TowerRuntime instance)
         {
             return TryPlaceTowerRuntime(gridPos, config, out instance, out _);

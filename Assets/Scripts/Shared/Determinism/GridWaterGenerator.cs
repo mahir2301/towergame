@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Shared.Runtime;
 using UnityEngine;
 
 namespace Shared.Determinism
@@ -12,11 +13,16 @@ namespace Shared.Determinism
         }
 
         public static HashSet<Vector2Int> Generate(Vector2Int gridSize, int minDistanceFromEdge, float noiseScale,
-            float threshold, int smoothPasses, System.Random random)
+            float threshold, int smoothPasses, System.Random random, Vector2Int nexusCenter = default,
+            int nexusExclusionZone = 0)
         {
             var offsetX = random.Next(-100000, 100001);
             var offsetY = random.Next(-100000, 100001);
             var water = new HashSet<Vector2Int>();
+            var hasExclusion = nexusExclusionZone > 0 && nexusCenter != default;
+            var nexusHalf = NexusRuntime.NexusSize / 2;
+            var nexusMin = new Vector2Int(nexusCenter.x - nexusHalf, nexusCenter.y - nexusHalf);
+            var nexusMax = new Vector2Int(nexusMin.x + NexusRuntime.NexusSize - 1, nexusMin.y + NexusRuntime.NexusSize - 1);
 
             for (var x = 0; x < gridSize.x; x++)
             {
@@ -25,6 +31,14 @@ namespace Shared.Determinism
                     if (x < minDistanceFromEdge || y < minDistanceFromEdge ||
                         x >= gridSize.x - minDistanceFromEdge || y >= gridSize.y - minDistanceFromEdge)
                         continue;
+
+                    if (hasExclusion)
+                    {
+                        var dx = Mathf.Max(0, Mathf.Max(nexusMin.x - x, x - nexusMax.x));
+                        var dy = Mathf.Max(0, Mathf.Max(nexusMin.y - y, y - nexusMax.y));
+                        if (Mathf.Max(dx, dy) < nexusExclusionZone)
+                            continue;
+                    }
 
                     var value = SampleFbmNoise(x + offsetX, y + offsetY, noiseScale);
                     if (value >= threshold)

@@ -118,7 +118,9 @@ namespace Client.Visuals
                 waterNoiseScale,
                 waterThreshold,
                 waterSmoothPasses,
-                new System.Random(newSeed));
+                new System.Random(newSeed),
+                new Vector2Int(gridManager.GridSize.x / 2, gridManager.GridSize.y / 2),
+                NexusRuntime.ExclusionZone);
 
             gridManager.SetTerrainCells(waterCells);
             RebuildWaterVisuals(waterCells);

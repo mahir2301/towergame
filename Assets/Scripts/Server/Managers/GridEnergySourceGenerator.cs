@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Shared.Data;
 using Shared.Grid;
+using Shared.Runtime;
 using UnityEngine;
 
 namespace Server.Managers
@@ -18,12 +19,18 @@ namespace Server.Managers
             int minDistanceBetweenNodes,
             int defaultMaxCapacity,
             int maxAttemptsPerNode,
-            int edgePadding)
+            int edgePadding,
+            Vector2Int nexusCenter = default,
+            int nexusExclusionZone = 0)
         {
             if (energyTypes == null || energyTypes.Length == 0)
                 return;
 
             var placed = new List<Vector2Int>();
+            var hasExclusion = nexusExclusionZone > 0 && nexusCenter != default;
+            var nexusHalf = NexusRuntime.NexusSize / 2;
+            var nexusMin = new Vector2Int(nexusCenter.x - nexusHalf, nexusCenter.y - nexusHalf);
+            var nexusMax = new Vector2Int(nexusMin.x + NexusRuntime.NexusSize - 1, nexusMin.y + NexusRuntime.NexusSize - 1);
 
             foreach (var energyType in energyTypes)
             {
@@ -44,6 +51,16 @@ namespace Server.Managers
                         continue;
                     if (!gridManager.IsCellAvailable(pos, Vector2Int.one, false))
                         continue;
+                    if (hasExclusion)
+                    {
+                        var dx = Mathf.Max(0, Mathf.Max(nexusMin.x - pos.x, pos.x - nexusMax.x));
+                        var dy = Mathf.Max(0, Mathf.Max(nexusMin.y - pos.y, pos.y - nexusMax.y));
+                        if (Mathf.Max(dx, dy) < nexusExclusionZone)
+                            continue;
+                        var distToCenter = Mathf.Max(Mathf.Abs(pos.x - nexusCenter.x), Mathf.Abs(pos.y - nexusCenter.y));
+                        if (distToCenter < energyType.EnergyRange)
+                            continue;
+                    }
                     if (!spawnManager.TryPlaceEnergyRuntime(pos, energyType, defaultMaxCapacity, out _))
                         continue;
 

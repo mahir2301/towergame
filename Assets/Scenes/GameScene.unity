@@ -451,6 +451,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Server.Managers.WorldGenerationManager
   ShowTopMostFoldoutHeaderGroup: 1
+  nexusExclusionZone: 8
+  nexusTypeIds:
+  - nexus
   minDistanceFromEdge: 3
   waterThreshold: 0.62
   waterNoiseScale: 0.045

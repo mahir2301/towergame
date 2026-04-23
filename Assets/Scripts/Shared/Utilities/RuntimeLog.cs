@@ -28,6 +28,8 @@ namespace Shared.Utilities
             public const string WorldGenEnergyDone = "WG-004";
             public const string WorldGenEnergyFailed = "WG-005";
             public const string WorldGenStatePublished = "WG-006";
+            public const string WorldGenNexusDone = "WG-007";
+            public const string WorldGenNexusFailed = "WG-008";
             public const string WaterRebuilt = "WT-001";
             public const string WaterMissingGrid = "WT-002";
             public const string WaterMissingMaterial = "WT-003";

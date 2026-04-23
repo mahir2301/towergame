@@ -40,3 +40,5 @@ MonoBehaviour:
   entityTypes:
   - {fileID: 11400000, guid: 4c3830db8f7b42e0b9f0c2d045e2d73c, type: 2}
   - {fileID: 11400000, guid: 554a4adfa20d47d5bb6d84f7afbdfb47, type: 2}
+  nexusTypes:
+  - {fileID: 11400000, guid: f198924f58cbb564b8d18106197f74e6, type: 2}
