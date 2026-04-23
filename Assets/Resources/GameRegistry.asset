@@ -24,11 +24,17 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 406d1cdfea4bfdf48b58869e79983afc, type: 2}
   - {fileID: 11400000, guid: 853673f9e3901194482b4178fa53fc29, type: 2}
   towerTypes:
-  - {fileID: 11400000, guid: 1847706b3890bb3499f0ca53a07a8a00, type: 2}
+  - {fileID: 11400000, guid: fc5c073fca38c284982ea263383a1a7d, type: 2}
+  - {fileID: 11400000, guid: 4c5f5f9aa03ab254d921e0a1cee52dac, type: 2}
+  - {fileID: 11400000, guid: 6eae94ff71299dd4487d7350613bb561, type: 2}
+  - {fileID: 11400000, guid: c62d1f645e41f964f8bc65eb24ce9a77, type: 2}
+  - {fileID: 11400000, guid: dbc6d90252179bd49b5f051499b4427f, type: 2}
   - {fileID: 11400000, guid: 8cc4fc1352bbe8c4b950a8a176e701ef, type: 2}
-  - {fileID: 11400000, guid: 421f28447705cd047b369eefe485c64a, type: 2}
+  - {fileID: 11400000, guid: 1847706b3890bb3499f0ca53a07a8a00, type: 2}
+  - {fileID: 11400000, guid: 29ed46033bd3db8439f829994f6717c3, type: 2}
+  - {fileID: 11400000, guid: a62896ea46e0857499849867a2f8aabf, type: 2}
   - {fileID: 11400000, guid: 3bab7a44e7a0fbc419671d3f1496e918, type: 2}
-  - {fileID: 11400000, guid: 057334ceb40dc8f48b4a92a954322436, type: 2}
+  - {fileID: 11400000, guid: 421f28447705cd047b369eefe485c64a, type: 2}
   weaponTypes:
   - {fileID: 11400000, guid: e0f9e2b79b60c434ab8f45f7fb65711c, type: 2}
   entityTypes:

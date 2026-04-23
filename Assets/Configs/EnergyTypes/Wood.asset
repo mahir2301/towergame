@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Data.EnergyType
   id: wood
   displayName: Wood
-  prefab: {fileID: 6870331177201499599, guid: 2b33dc1d20de1e448b0a3d8f70b9c736, type: 3}
+  prefab: {fileID: 6893667234963368319, guid: 54f3a1f671e4a9c4889095761b7911e7, type: 3}
   energyRange: 20
