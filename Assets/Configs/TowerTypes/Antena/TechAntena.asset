@@ -16,9 +16,8 @@ MonoBehaviour:
   displayName: Tech Antena
   classType: {fileID: 11400000, guid: 853673f9e3901194482b4178fa53fc29, type: 2}
   prefab: {fileID: 0}
-  size: {x: 1, y: 1}
+  size: {x: 2, y: 2}
   canBePlacedOnWater: 0
-  placementOffset: {x: 0, y: 0, z: 0}
   stats:
     maxHealth: 0
     damage: 0

@@ -18,7 +18,6 @@ MonoBehaviour:
   prefab: {fileID: 4029037979073732832, guid: 618c8394fdc181c48baafd8d69f14eab, type: 3}
   size: {x: 2, y: 2}
   canBePlacedOnWater: 1
-  placementOffset: {x: 0, y: 0.8, z: 0}
   stats:
     maxHealth: 0
     damage: 0

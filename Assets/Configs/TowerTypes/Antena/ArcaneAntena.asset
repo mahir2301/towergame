@@ -16,9 +16,8 @@ MonoBehaviour:
   displayName: Arcane Antena
   classType: {fileID: 11400000, guid: 54de1a5c92312f840a6c90a4d37d3b8e, type: 2}
   prefab: {fileID: 6472781644849013702, guid: 98c0cbae95dacb749b80e9d587e7e415, type: 3}
-  size: {x: 1, y: 1}
+  size: {x: 2, y: 2}
   canBePlacedOnWater: 0
-  placementOffset: {x: 0, y: 0, z: 0}
   stats:
     maxHealth: 0
     damage: 0

@@ -199,7 +199,7 @@ namespace Shared.Grid
                 return Vector3.zero;
 
             var size = config != null ? config.Size : Vector2Int.one;
-            var offset = config != null ? config.PlacementOffset : Vector3.zero;
+            var offset = new Vector3(0f, 1f, 0f);
             return Instance.GridToWorld(gridPos, size, 0f) + offset;
         }
 

@@ -16,9 +16,8 @@ MonoBehaviour:
   displayName: Medival Antena
   classType: {fileID: 11400000, guid: 6d521e4068922644a98d342009925aa0, type: 2}
   prefab: {fileID: 1946773952065662183, guid: 059fedd4d670138488e5266b63a841db, type: 3}
-  size: {x: 1, y: 1}
+  size: {x: 2, y: 2}
   canBePlacedOnWater: 0
-  placementOffset: {x: 0, y: 0, z: 0}
   stats:
     maxHealth: 0
     damage: 0

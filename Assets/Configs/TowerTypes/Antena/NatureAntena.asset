@@ -16,9 +16,8 @@ MonoBehaviour:
   displayName: Nature Antena
   classType: {fileID: 11400000, guid: 4db51c9f4fcc09d419954139b998794f, type: 2}
   prefab: {fileID: 8072591855888863033, guid: 9398218545f86604eb87527a4c5954a2, type: 3}
-  size: {x: 1, y: 1}
+  size: {x: 2, y: 2}
   canBePlacedOnWater: 0
-  placementOffset: {x: 0, y: 0, z: 0}
   stats:
     maxHealth: 0
     damage: 0

@@ -16,7 +16,6 @@ namespace Shared.Data
         [Header("Placement")]
         [SerializeField] private Vector2Int size = Vector2Int.one;
         [SerializeField] private bool canBePlacedOnWater;
-        [SerializeField] private Vector3 placementOffset;
 
         [Header("Stats")]
         [SerializeField] private TowerStats stats;
@@ -27,7 +26,7 @@ namespace Shared.Data
         public GameObject Prefab => prefab;
         public Vector2Int Size => size;
         public bool CanBePlacedOnWater => canBePlacedOnWater;
-        public Vector3 PlacementOffset => placementOffset;
+
         public TowerStats Stats => stats;
         public bool IsAntenna => stats.antennaRange > 0;
     }
