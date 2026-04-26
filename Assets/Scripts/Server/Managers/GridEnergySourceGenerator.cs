@@ -12,7 +12,7 @@ namespace Server.Managers
         public static void Spawn(
             System.Random random,
             Vector2Int gridSize,
-            EnergyType[] energyTypes,
+            PlaceableType[] energyPlaceables,
             GridManager gridManager,
             ServerSpawnManager spawnManager,
             int nodeCount,
@@ -23,7 +23,7 @@ namespace Server.Managers
             Vector2Int nexusCenter = default,
             int nexusExclusionZone = 0)
         {
-            if (energyTypes == null || energyTypes.Length == 0)
+            if (energyPlaceables == null || energyPlaceables.Length == 0)
                 return;
 
             var placed = new List<Vector2Int>();
@@ -32,10 +32,18 @@ namespace Server.Managers
             var nexusMin = new Vector2Int(nexusCenter.x - nexusHalf, nexusCenter.y - nexusHalf);
             var nexusMax = new Vector2Int(nexusMin.x + NexusRuntime.NexusSize - 1, nexusMin.y + NexusRuntime.NexusSize - 1);
 
-            foreach (var energyType in energyTypes)
+            foreach (var energyPlaceable in energyPlaceables)
             {
-                if (energyType == null)
+                if (energyPlaceable == null)
                     continue;
+
+                var energyRuntime = energyPlaceable.Prefab != null
+                    ? energyPlaceable.Prefab.GetComponent<EnergyRuntime>()
+                    : null;
+                if (energyRuntime == null)
+                    continue;
+
+                var energyRange = energyRuntime.EnergyRange;
 
                 var spawnedForType = 0;
                 var attempts = 0;
@@ -49,7 +57,7 @@ namespace Server.Managers
 
                     if (!IsFarEnough(pos, placed, minDistanceBetweenNodes))
                         continue;
-                    if (!gridManager.IsCellAvailable(pos, Vector2Int.one, false))
+                    if (!gridManager.IsCellAvailable(pos, Vector2Int.one, null))
                         continue;
                     if (hasExclusion)
                     {
@@ -58,10 +66,10 @@ namespace Server.Managers
                         if (Mathf.Max(dx, dy) < nexusExclusionZone)
                             continue;
                         var distToCenter = Mathf.Max(Mathf.Abs(pos.x - nexusCenter.x), Mathf.Abs(pos.y - nexusCenter.y));
-                        if (distToCenter < energyType.EnergyRange)
+                        if (distToCenter < energyRange)
                             continue;
                     }
-                    if (!spawnManager.TryPlaceEnergyRuntime(pos, energyType, defaultMaxCapacity, out _))
+                    if (!spawnManager.TryPlacePlaceableRuntime(pos, energyPlaceable, out _, out _, defaultMaxCapacity))
                         continue;
 
                     placed.Add(pos);

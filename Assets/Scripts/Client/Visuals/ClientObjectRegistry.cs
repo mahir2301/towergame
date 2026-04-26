@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Shared;
 using Shared.Runtime;
+using Shared.Runtime.Placeables;
 using Shared.Utilities;
 using UnityEngine;
 
@@ -31,14 +32,10 @@ namespace Client.Visuals
 
         private void OnEnable()
         {
-            subscriptions.Add(() => GameEvents.EnergySpawned += OnEnergySpawned,
-                () => GameEvents.EnergySpawned -= OnEnergySpawned);
-            subscriptions.Add(() => GameEvents.EnergyDespawned += OnEnergyDespawned,
-                () => GameEvents.EnergyDespawned -= OnEnergyDespawned);
-            subscriptions.Add(() => GameEvents.TowerSpawned += OnTowerSpawned,
-                () => GameEvents.TowerSpawned -= OnTowerSpawned);
-            subscriptions.Add(() => GameEvents.TowerDespawned += OnTowerDespawned,
-                () => GameEvents.TowerDespawned -= OnTowerDespawned);
+            subscriptions.Add(() => GameEvents.PlaceableSpawned += OnPlaceableSpawned,
+                () => GameEvents.PlaceableSpawned -= OnPlaceableSpawned);
+            subscriptions.Add(() => GameEvents.PlaceableDespawned += OnPlaceableDespawned,
+                () => GameEvents.PlaceableDespawned -= OnPlaceableDespawned);
         }
 
         private void OnDisable()
@@ -53,28 +50,29 @@ namespace Client.Visuals
             SingletonUtility.ClearIfCurrent(Instance, this, () => Instance = null);
         }
 
-        private void OnEnergySpawned(EnergyRuntime energy)
+        private void OnPlaceableSpawned(PlaceableBehavior placeable)
         {
-            if (energy == null || !energy.IsSpawned) return;
-            energyNodes[energy.NetworkObjectId] = energy;
+            if (placeable is EnergyRuntime energy)
+            {
+                if (energy.IsSpawned)
+                    energyNodes[energy.NetworkObjectId] = energy;
+                return;
+            }
+
+            if (placeable is TowerRuntime tower && tower.IsSpawned)
+                towers[tower.NetworkObjectId] = tower;
         }
 
-        private void OnEnergyDespawned(EnergyRuntime energy)
+        private void OnPlaceableDespawned(PlaceableBehavior placeable)
         {
-            if (energy == null) return;
-            energyNodes.Remove(energy.NetworkObjectId);
-        }
+            if (placeable is EnergyRuntime energy)
+            {
+                energyNodes.Remove(energy.NetworkObjectId);
+                return;
+            }
 
-        private void OnTowerSpawned(TowerRuntime tower)
-        {
-            if (tower == null || !tower.IsSpawned) return;
-            towers[tower.NetworkObjectId] = tower;
-        }
-
-        private void OnTowerDespawned(TowerRuntime tower)
-        {
-            if (tower == null) return;
-            towers.Remove(tower.NetworkObjectId);
+            if (placeable is TowerRuntime tower)
+                towers.Remove(tower.NetworkObjectId);
         }
     }
 }

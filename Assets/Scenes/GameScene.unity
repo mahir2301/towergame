@@ -420,6 +420,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Grid.GridManager
   gridSize: {x: 320, y: 320}
+  defaultTileType: {fileID: 11400000, guid: 8c0b3fc29659042049b4490cbb91b512, type: 2}
 --- !u!4 &500300004
 Transform:
   m_ObjectHideFlags: 0
@@ -449,11 +450,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 925dd5378bd5fe84ca6d76ffff4245ea, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.Server.Managers.WorldGenerationManager
+  m_EditorClassIdentifier: Server::Server.Managers.WorldGenerationManager
   ShowTopMostFoldoutHeaderGroup: 1
   nexusExclusionZone: 8
-  nexusTypeIds:
-  - nexus
   minDistanceFromEdge: 3
   waterThreshold: 0.62
   waterNoiseScale: 0.045
@@ -463,7 +462,10 @@ MonoBehaviour:
   defaultMaxCapacity: 100
   maxAttemptsPerNode: 100
   edgePadding: 2
-  energyTypeIds: []
+  nexusPlaceableTypeId: nexus
+  energyPlaceableTypeIds:
+  - crystal
+  - mycelium
   gridManager: {fileID: 500300003}
   worldGenerationState: {fileID: 500300010}
   serverSpawnManager: {fileID: 500300011}
@@ -476,9 +478,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 500301000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c47da33d57e4ee4088f28d22865a6d0, type: 3}
+  m_Script: {fileID: 11500000, guid: 51254732c74f2477bad63a550e947e95, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Runtime.TowerSpawnSystem
+  m_EditorClassIdentifier: Shared::Shared.Runtime.PlaceableSpawnSystem
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &500300007
 MonoBehaviour:
@@ -570,11 +572,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: afec1a4c84df4006950e34a9cdf29ff7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.Client.Controllers.TowerPlacementController
+  m_EditorClassIdentifier: Client::Client.Controllers.TowerPlacementController
   gridManager: {fileID: 500300003}
-  towerSpawnSystem: {fileID: 500300006}
+  placeableSpawnSystem: {fileID: 500300006}
   mainCamera: {fileID: 1745330854}
-  currentTowerConfig: {fileID: 0}
+  currentPlaceableType: {fileID: 0}
   canConnectColor: {r: 0.2, g: 0.8, b: 0.2, a: 0.6}
   cannotConnectColor: {r: 0.8, g: 0.2, b: 0.2, a: 0.6}
 --- !u!114 &500300014
@@ -828,6 +830,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.Client.UI.HotbarController
   uiDocument: {fileID: 1035705160}
   placementController: {fileID: 500300013}
+  playerLoadout: {fileID: 11400000, guid: 37a65eadc29444b718cdb23b68950ec3, type: 2}
 --- !u!114 &1035705160
 MonoBehaviour:
   m_ObjectHideFlags: 0

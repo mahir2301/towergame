@@ -13,9 +13,9 @@ namespace Client.Controllers
     public class TowerPlacementController : MonoBehaviour
     {
         [SerializeField] private GridManager gridManager;
-        [SerializeField] private TowerSpawnSystem towerSpawnSystem;
+        [SerializeField] private PlaceableSpawnSystem placeableSpawnSystem;
         [SerializeField] private Camera mainCamera;
-        [SerializeField] private TowerType currentTowerConfig;
+        [SerializeField] private PlaceableType currentPlaceableType;
         [SerializeField] private Color canConnectColor = new(0.2f, 0.8f, 0.2f, 0.6f);
         [SerializeField] private Color cannotConnectColor = new(0.8f, 0.2f, 0.2f, 0.6f);
 
@@ -36,8 +36,8 @@ namespace Client.Controllers
         private void OnEnable()
         {
             subscriptions.Add(
-                () => ClientEvents.PlacementResultReceived += HandlePlacementResultReceived,
-                () => ClientEvents.PlacementResultReceived -= HandlePlacementResultReceived);
+                () => ClientEvents.PlacementResponseReceived += HandlePlacementResponseReceived,
+                () => ClientEvents.PlacementResponseReceived -= HandlePlacementResponseReceived);
         }
 
         private void OnDisable()
@@ -62,10 +62,10 @@ namespace Client.Controllers
 
         private void CreateGhost()
         {
-            if (currentTowerConfig?.Prefab == null)
+            if (currentPlaceableType?.Prefab == null)
                 return;
 
-            ghostInstance = Instantiate(currentTowerConfig.Prefab, Vector3.zero, Quaternion.identity);
+            ghostInstance = Instantiate(currentPlaceableType.Prefab, Vector3.zero, Quaternion.identity);
             ghostInstance.name = "TowerGhost";
             PrefabHelper.DisableForPreview(ghostInstance);
 
@@ -94,28 +94,28 @@ namespace Client.Controllers
             var gridPos = GetMouseGridPosition();
             currentGridPos = gridPos;
 
-            if (gridPos is null || currentTowerConfig == null)
+            if (gridPos is null || currentPlaceableType == null)
             {
                 ghostInstance.SetActive(false);
                 return;
             }
 
-            var result = EvaluateClientPlacement(currentGridPos.Value, currentTowerConfig);
-            if (result != PlacementResult.Success && result != PlacementResult.OutOfEnergyRange)
+            var response = EvaluateClientPlacement(currentGridPos.Value, currentPlaceableType);
+            if (!PlacementValidator.IsPlacementAllowed(response, allowOutOfRange: true))
             {
                 ghostInstance.SetActive(false);
                 return;
             }
 
             ghostInstance.SetActive(true);
-            ghostInstance.transform.position = GridManager.TowerWorldPos(currentGridPos.Value, currentTowerConfig);
+            ghostInstance.transform.position = GridManager.PlaceableWorldPos(currentGridPos.Value, currentPlaceableType);
 
-            UpdateGhostEnergyIndicator(result == PlacementResult.Success);
+            UpdateGhostEnergyIndicator(response.Accepted);
         }
 
         private void UpdateGhostEnergyIndicator(bool canConnect)
         {
-            if (currentTowerConfig == null || currentGridPos == null)
+            if (currentPlaceableType == null || currentGridPos == null)
                 return;
 
             ghostPropertyBlock.SetColor(BaseColorProperty, canConnect ? canConnectColor : cannotConnectColor);
@@ -161,40 +161,43 @@ namespace Client.Controllers
             if (!RuntimeBootstrap.IsReady)
                 return;
 
-            if (currentGridPos is null || currentTowerConfig == null)
+            if (currentGridPos is null || currentPlaceableType == null)
                 return;
 
             if (IsPointerOverAnyUI())
                 return;
 
-            var result = EvaluateClientPlacement(currentGridPos.Value, currentTowerConfig);
-            if (!PlacementValidator.IsPlacementAllowed(result, allowOutOfEnergyRange: true))
+            var response = EvaluateClientPlacement(currentGridPos.Value, currentPlaceableType);
+            if (!PlacementValidator.IsPlacementAllowed(response, allowOutOfRange: true))
             {
                 RuntimeLog.Placement.Info(RuntimeLog.Code.PlacementClientBlocked,
-                    $"Client prevented placement for '{currentTowerConfig.Id}' at {currentGridPos.Value}: {result}.");
+                    $"Client prevented placement for '{currentPlaceableType.Id}' at {currentGridPos.Value}: {response.Code}.");
                 return;
             }
 
-            towerSpawnSystem.RequestPlaceTowerServerRpc(currentTowerConfig.Id, currentGridPos.Value);
+            if (placeableSpawnSystem == null)
+                return;
+
+            placeableSpawnSystem.RequestPlaceableServerRpc(currentPlaceableType.Id, currentGridPos.Value);
         }
 
-        private PlacementResult EvaluateClientPlacement(Vector2Int gridPos, TowerType towerConfig)
+        private PlacementResponse EvaluateClientPlacement(Vector2Int gridPos, PlaceableType placeableType)
         {
-            return PlacementValidator.ValidatePlacement(gridPos, towerConfig, gridManager, PhaseManager.Instance,
+            return PlacementValidator.ValidatePlacement(gridPos, placeableType, gridManager, PhaseManager.Instance,
                 IsInEnergyRangeFromRegistry);
         }
 
-        private static void HandlePlacementResultReceived(string towerConfigId, Vector2Int gridPos, PlacementResult result)
+        private static void HandlePlacementResponseReceived(PlacementResponse response)
         {
-            if (PlacementValidator.IsPlacementAllowed(result, allowOutOfEnergyRange: true))
+            if (PlacementValidator.IsPlacementAllowed(response, allowOutOfRange: true))
             {
                 RuntimeLog.Placement.Info(RuntimeLog.Code.PlacementServerResult,
-                    $"Server accepted placement for '{towerConfigId}' at {gridPos} with result {result}.");
+                    $"Server accepted placement for '{response.PlaceableTypeId}' at {response.GridPos} with result {response.Code}.");
                 return;
             }
 
             RuntimeLog.Placement.Warning(RuntimeLog.Code.PlacementServerResult,
-                $"Server rejected placement for '{towerConfigId}' at {gridPos}: {result}.");
+                $"Server rejected placement for '{response.PlaceableTypeId}' at {response.GridPos}: {response.Code}.");
         }
 
         private static bool IsPointerOverAnyUI()
@@ -222,10 +225,14 @@ namespace Client.Controllers
             return false;
         }
 
-        private static bool IsInEnergyRangeFromRegistry(Vector2Int pos, ClassType classType, int energyCost)
+        private static bool IsInEnergyRangeFromRegistry(Vector2Int pos, PlaceableType placeableType)
         {
+            var towerRuntime = placeableType != null ? placeableType.Prefab?.GetComponent<TowerRuntime>() : null;
+            var classType = towerRuntime != null ? towerRuntime.ClassType : null;
+            var energyCost = towerRuntime != null ? towerRuntime.EnergyCost : 0;
+
             if (classType == null || ClientObjectRegistry.Instance == null)
-                return false;
+                return true;
 
             var energies = ClientObjectRegistry.Instance.EnergyNodes;
             foreach (var kvp in energies)
@@ -242,9 +249,9 @@ namespace Client.Controllers
             {
                 var antenna = kvp.Value;
                 if (antenna == null || !antenna.IsSpawned || !antenna.IsPowered) continue;
-                if (antenna.Config == null || !antenna.Config.IsAntenna) continue;
+                if (!antenna.IsAntenna) continue;
 
-                var range = antenna.Config.Stats.antennaRange;
+                var range = antenna.AntennaRange;
                 if (Vector2Int.Distance(pos, antenna.GridPosition) > range) continue;
 
                 var sourceEnergyId = antenna.ConnectedEnergyId;
@@ -260,14 +267,15 @@ namespace Client.Controllers
             return false;
         }
 
-        public void SetTowerConfig(TowerType config)
+        public void SetPlaceableType(PlaceableType type)
         {
-            currentTowerConfig = config;
+            currentPlaceableType = type;
 
             if (ghostInstance != null)
                 Destroy(ghostInstance);
 
             CreateGhost();
         }
+
     }
 }

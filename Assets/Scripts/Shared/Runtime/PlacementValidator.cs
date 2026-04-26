@@ -7,32 +7,36 @@ namespace Shared.Runtime
 {
     public static class PlacementValidator
     {
-        public static PlacementResult ValidatePlacement(Vector2Int gridPos, TowerType towerConfig, GridManager gridManager,
-            PhaseManager phaseManager, Func<Vector2Int, ClassType, int, bool> energyRangeEvaluator)
+        public static PlacementResponse ValidatePlacement(Vector2Int gridPos, PlaceableType placeableType, GridManager gridManager,
+            PhaseManager phaseManager, Func<Vector2Int, PlaceableType, bool> rangeEvaluator)
         {
-            if (gridManager == null || phaseManager == null || energyRangeEvaluator == null)
-                return PlacementResult.MissingDependencies;
+            var typeId = placeableType != null ? placeableType.Id : string.Empty;
 
-            if (towerConfig == null || towerConfig.Prefab == null || towerConfig.ClassType == null)
-                return PlacementResult.InvalidTowerType;
+            if (gridManager == null || phaseManager == null || rangeEvaluator == null)
+                return PlacementResponse.Create(typeId, gridPos, false, PlacementCodes.MissingDependencies);
+
+            if (placeableType == null || placeableType.Prefab == null)
+                return PlacementResponse.Create(typeId, gridPos, false, PlacementCodes.InvalidType);
 
             if (phaseManager.CurrentPhase != GamePhase.Building)
-                return PlacementResult.OutOfBuildPhase;
+                return PlacementResponse.Create(typeId, gridPos, false, PlacementCodes.PhaseBlocked);
 
             if (!gridManager.IsValidPosition(gridPos))
-                return PlacementResult.InvalidGridPosition;
+                return PlacementResponse.Create(typeId, gridPos, false, PlacementCodes.InvalidGridPosition);
 
-            if (!gridManager.IsCellAvailable(gridPos, towerConfig.Size, towerConfig.CanBePlacedOnWater))
-                return PlacementResult.CellBlocked;
+            if (!gridManager.IsCellAvailable(gridPos, placeableType.Size, placeableType.AllowedTileTypes))
+                return PlacementResponse.Create(typeId, gridPos, false, PlacementCodes.CellBlocked);
 
-            var isInRange = energyRangeEvaluator(gridPos, towerConfig.ClassType, towerConfig.Stats.energyCost);
-            return isInRange ? PlacementResult.Success : PlacementResult.OutOfEnergyRange;
+            var isInRange = rangeEvaluator(gridPos, placeableType);
+            return isInRange
+                ? PlacementResponse.Create(typeId, gridPos, true, PlacementCodes.Success)
+                : PlacementResponse.Create(typeId, gridPos, false, PlacementCodes.OutOfRange);
         }
 
-        public static bool IsPlacementAllowed(PlacementResult result, bool allowOutOfEnergyRange)
+        public static bool IsPlacementAllowed(PlacementResponse response, bool allowOutOfRange)
         {
-            return result == PlacementResult.Success
-                   || (allowOutOfEnergyRange && result == PlacementResult.OutOfEnergyRange);
+            return response.Accepted
+                   || (allowOutOfRange && response.Code.ToString() == PlacementCodes.OutOfRange);
         }
     }
 }

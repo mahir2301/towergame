@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using Shared.Data;
 using Shared.Determinism;
 using Shared.Grid;
 using Shared.Runtime;
@@ -112,17 +114,77 @@ namespace Client.Visuals
                 return;
             }
 
-            var waterCells = GridWaterGenerator.Generate(
-                gridManager.GridSize,
-                minDistanceFromEdge,
-                waterNoiseScale,
-                waterThreshold,
-                waterSmoothPasses,
-                new System.Random(newSeed),
-                new Vector2Int(gridManager.GridSize.x / 2, gridManager.GridSize.y / 2),
-                NexusRuntime.ExclusionZone);
+            var waterCells = new HashSet<Vector2Int>();
+            var tileTypeMap = worldGenerationState.GetTileTypeIdMap();
+            var expectedCellCount = gridManager.GridSize.x * gridManager.GridSize.y;
+            if (tileTypeMap.Length == expectedCellCount)
+            {
+                var flatTiles = new TileType[expectedCellCount];
+                var waterTag = GameRegistry.Instance?.Tags.FirstOrDefault(t => t != null && t.Id == "water");
+                for (var index = 0; index < tileTypeMap.Length; index++)
+                {
+                    var tile = GameRegistry.Instance?.GetTileType(tileTypeMap[index]);
+                    flatTiles[index] = tile;
 
-            gridManager.SetTerrainCells(waterCells);
+                    if (waterTag != null && tile != null && tile.HasTag(waterTag))
+                    {
+                        var x = index % gridManager.GridSize.x;
+                        var y = index / gridManager.GridSize.x;
+                        waterCells.Add(new Vector2Int(x, y));
+                    }
+                }
+
+                gridManager.SetTileMap(flatTiles);
+            }
+            else
+            {
+                waterCells = GridWaterGenerator.Generate(
+                    gridManager.GridSize,
+                    minDistanceFromEdge,
+                    waterNoiseScale,
+                    waterThreshold,
+                    waterSmoothPasses,
+                    new System.Random(newSeed),
+                    new Vector2Int(gridManager.GridSize.x / 2, gridManager.GridSize.y / 2),
+                    NexusRuntime.ExclusionZone);
+
+                var registry = GameRegistry.Instance;
+                var waterTag = registry?.Tags.FirstOrDefault(t => t != null && t.Id == "water");
+                TileType waterTile = null;
+                TileType defaultTile = null;
+                if (registry != null)
+                {
+                    var tiles = registry.TileTypes;
+                    for (var i = 0; i < tiles.Count; i++)
+                    {
+                        var tile = tiles[i];
+                        if (tile == null)
+                            continue;
+
+                        if (defaultTile == null)
+                            defaultTile = tile;
+
+                        if (waterTag != null && tile.HasTag(waterTag))
+                            waterTile = tile;
+                    }
+                }
+
+                var flatTiles = new TileType[expectedCellCount];
+                for (var index = 0; index < expectedCellCount; index++)
+                {
+                    var x = index % gridManager.GridSize.x;
+                    var y = index / gridManager.GridSize.x;
+                    var pos = new Vector2Int(x, y);
+
+                    if (waterCells.Contains(pos) && waterTile != null)
+                        flatTiles[index] = waterTile;
+                    else
+                        flatTiles[index] = defaultTile;
+                }
+
+                gridManager.SetTileMap(flatTiles);
+            }
+
             RebuildWaterVisuals(waterCells);
 
             lastAppliedSeed = newSeed;

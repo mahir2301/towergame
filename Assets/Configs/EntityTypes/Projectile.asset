@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e94b58c22f4a53b0f9bb26f6f13cf2, type: 3}
   m_Name: Projectile
   m_EditorClassIdentifier: Shared::Shared.Data.EntityType
-  id: projectile.default
+  id: projectile
   displayName: Projectile
-  kind: 3
+  tags: []
   prefab: {fileID: 8455847650273727661, guid: 86b8b9d672c3b99408ba3246746ea42c, type: 3}

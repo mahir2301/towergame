@@ -4,6 +4,7 @@
     "references": [
         "Shared",
         "Unity.Netcode.Runtime",
+        "Unity.Collections",
         "Unity.Cinemachine",
         "Unity.InputSystem"
     ],

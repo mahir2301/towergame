@@ -3,6 +3,7 @@ using Client.UI;
 using Shared;
 using Shared.Grid;
 using Shared.Runtime;
+using Shared.Runtime.Placeables;
 using Shared.Utilities;
 using UnityEngine;
 
@@ -25,20 +26,16 @@ namespace Client.Visuals
                 return;
             }
 
-            GameEvents.EnergySpawned += HandleEnergySpawned;
-            GameEvents.EnergyDespawned += HandleEnergyDespawned;
-            GameEvents.TowerSpawned += HandleTowerSpawned;
-            GameEvents.TowerDespawned += HandleTowerDespawned;
+            GameEvents.PlaceableSpawned += HandlePlaceableSpawned;
+            GameEvents.PlaceableDespawned += HandlePlaceableDespawned;
 
             BootstrapExistingRuntimes();
         }
 
         private void OnDisable()
         {
-            GameEvents.EnergySpawned -= HandleEnergySpawned;
-            GameEvents.EnergyDespawned -= HandleEnergyDespawned;
-            GameEvents.TowerSpawned -= HandleTowerSpawned;
-            GameEvents.TowerDespawned -= HandleTowerDespawned;
+            GameEvents.PlaceableSpawned -= HandlePlaceableSpawned;
+            GameEvents.PlaceableDespawned -= HandlePlaceableDespawned;
 
             ClearAllPresentation();
         }
@@ -53,11 +50,10 @@ namespace Client.Visuals
                 if (!towerById.TryGetValue(kvp.Key, out var tower) || tower == null || !tower.IsSpawned || kvp.Value == null)
                     continue;
 
-                var config = tower.Config;
-                if (config == null || !config.IsAntenna)
+                if (!tower.IsAntenna)
                     continue;
 
-                kvp.Value.UpdateRange(config.Stats.antennaRange, tower.IsPowered);
+                kvp.Value.UpdateRange(tower.AntennaRange, tower.IsPowered);
             }
         }
 
@@ -93,6 +89,30 @@ namespace Client.Visuals
             energyIndicators[id] = indicator;
         }
 
+        private void HandlePlaceableSpawned(PlaceableBehavior placeable)
+        {
+            if (placeable is EnergyRuntime energy)
+            {
+                HandleEnergySpawned(energy);
+                return;
+            }
+
+            if (placeable is TowerRuntime tower)
+                HandleTowerSpawned(tower);
+        }
+
+        private void HandlePlaceableDespawned(PlaceableBehavior placeable)
+        {
+            if (placeable is EnergyRuntime energy)
+            {
+                HandleEnergyDespawned(energy);
+                return;
+            }
+
+            if (placeable is TowerRuntime tower)
+                HandleTowerDespawned(tower);
+        }
+
         private void HandleEnergyDespawned(EnergyRuntime energy)
         {
             if (energy == null)
@@ -122,12 +142,11 @@ namespace Client.Visuals
             WorldOverlayManager.Instance?.RegisterTower(tower);
             gridManager?.RegisterOccupiedCells(tower.GridPosition, tower.Size, tower.gameObject);
 
-            var config = tower.Config;
-            if (config == null || !config.IsAntenna)
+            if (!tower.IsAntenna)
                 return;
 
             var indicator = CreateIndicator(tower.transform, "AntennaRangeIndicator");
-            indicator.Show(config.Stats.antennaRange, tower.IsPowered);
+            indicator.Show(tower.AntennaRange, tower.IsPowered);
             towerIndicators[id] = indicator;
         }
 

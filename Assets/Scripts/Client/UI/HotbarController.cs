@@ -13,6 +13,7 @@ namespace Client.UI
     {
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private TowerPlacementController placementController;
+        [SerializeField] private PlayerLoadout playerLoadout;
 
         private VisualElement slotsContainer;
         private VisualElement phaseButtonsContainer;
@@ -108,16 +109,16 @@ namespace Client.UI
 
         private void BuildTowerSlots()
         {
-            var towerTypes = GameRegistry.Instance.TowerTypes;
-            for (var i = 0; i < towerTypes.Count; i++)
+            var placeableTypes = ResolveBuildPlaceables();
+            for (var i = 0; i < placeableTypes.Count; i++)
             {
-                var config = towerTypes[i];
+                var config = placeableTypes[i];
                 var slot = CreateSlotVisual(config.DisplayName, i);
 
                 if (config.Prefab != null)
                 {
                     var previewImage = slot.Q<Image>(className: "slot-preview");
-                    var previewTexture = CreateTowerPreview(config, i);
+                    var previewTexture = CreatePlaceablePreview(config, i);
                     if (previewImage != null && previewTexture != null)
                         previewImage.image = previewTexture;
                 }
@@ -168,7 +169,7 @@ namespace Client.UI
             return slot;
         }
 
-        private RenderTexture CreateTowerPreview(TowerType config, int index)
+        private RenderTexture CreatePlaceablePreview(PlaceableType config, int index)
         {
             if (config.Prefab == null) return null;
 
@@ -231,10 +232,18 @@ namespace Client.UI
 
             if (currentPhase == GamePhase.Building && placementController != null)
             {
-                var towerTypes = GameRegistry.Instance.TowerTypes;
-                if (index < towerTypes.Count)
-                    placementController.SetTowerConfig(towerTypes[index]);
+                var placeableTypes = ResolveBuildPlaceables();
+                if (index < placeableTypes.Count)
+                    placementController.SetPlaceableType(placeableTypes[index]);
             }
+        }
+
+        private IReadOnlyList<PlaceableType> ResolveBuildPlaceables()
+        {
+            if (playerLoadout != null && playerLoadout.SelectedPlaceables != null && playerLoadout.SelectedPlaceables.Count > 0)
+                return playerLoadout.SelectedPlaceables;
+
+            return GameRegistry.Instance.PlaceableTypes;
         }
 
         private void CleanupPreviews()

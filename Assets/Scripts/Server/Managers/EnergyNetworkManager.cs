@@ -3,6 +3,7 @@ using Shared;
 using Shared.Data;
 using Shared.Grid;
 using Shared.Runtime;
+using Shared.Runtime.Placeables;
 using Shared.Utilities;
 using Unity.Netcode;
 using UnityEngine;
@@ -39,14 +40,10 @@ namespace Server.Managers
             if (!SingletonUtility.TryAssign(Instance, this, value => Instance = value))
                 return;
 
-            subscriptions.Add(() => ServerEvents.EnergySpawned += RegisterEnergyRuntime,
-                () => ServerEvents.EnergySpawned -= RegisterEnergyRuntime);
-            subscriptions.Add(() => ServerEvents.EnergyDespawned += UnregisterEnergyRuntime,
-                () => ServerEvents.EnergyDespawned -= UnregisterEnergyRuntime);
-            subscriptions.Add(() => ServerEvents.TowerSpawned += OnTowerSpawned,
-                () => ServerEvents.TowerSpawned -= OnTowerSpawned);
-            subscriptions.Add(() => ServerEvents.TowerDespawned += OnTowerDespawned,
-                () => ServerEvents.TowerDespawned -= OnTowerDespawned);
+            subscriptions.Add(() => ServerEvents.PlaceableSpawned += OnPlaceableSpawned,
+                () => ServerEvents.PlaceableSpawned -= OnPlaceableSpawned);
+            subscriptions.Add(() => ServerEvents.PlaceableDespawned += OnPlaceableDespawned,
+                () => ServerEvents.PlaceableDespawned -= OnPlaceableDespawned);
 
             var networkManager = NetworkManager.Singleton;
             if (networkManager != null)
@@ -112,6 +109,30 @@ namespace Server.Managers
             DisconnectTower(tower);
         }
 
+        private void OnPlaceableSpawned(PlaceableBehavior placeable)
+        {
+            if (placeable is EnergyRuntime energy)
+            {
+                RegisterEnergyRuntime(energy);
+                return;
+            }
+
+            if (placeable is TowerRuntime tower)
+                OnTowerSpawned(tower);
+        }
+
+        private void OnPlaceableDespawned(PlaceableBehavior placeable)
+        {
+            if (placeable is EnergyRuntime energy)
+            {
+                UnregisterEnergyRuntime(energy);
+                return;
+            }
+
+            if (placeable is TowerRuntime tower)
+                OnTowerDespawned(tower);
+        }
+
         public bool TryConnectTowerToEnergy(TowerRuntime tower)
         {
             if (!RuntimeNet.IsServer || tower == null)
@@ -124,21 +145,22 @@ namespace Server.Managers
             if (towerToEnergy.ContainsKey(towerId))
                 return true;
 
-            var config = tower.Config;
-            if (config == null)
+            var classType = tower.ClassType;
+            if (classType == null)
                 return false;
 
-            var candidate = FindBestCandidate(tower.GridPosition, config.ClassType, config.Stats.energyCost);
+            var energyCost = tower.EnergyCost;
+            var candidate = FindBestCandidate(tower.GridPosition, classType, energyCost);
             if (candidate.energy == null)
                 return false;
 
-            if (!candidate.energy.TryConnectTower(tower.NetworkObjectId, config.Stats.energyCost))
+            if (!candidate.energy.TryConnectTower(tower.NetworkObjectId, energyCost))
                 return false;
 
             tower.SetConnection(candidate.energy.NetworkObjectId, candidate.viaAntennaId);
             towerToEnergy[towerId] = candidate.energy.NetworkObjectId;
 
-            if (config.IsAntenna)
+            if (tower.IsAntenna)
                 activeAntennas[towerId] = tower;
             return true;
         }
@@ -178,19 +200,22 @@ namespace Server.Managers
             if (!RuntimeNet.IsServer) return;
 
             var towerId = tower.NetworkObjectId;
-            var config = tower.Config;
-            if (config == null) return;
+            var classType = tower.ClassType;
+            if (classType == null)
+                return;
+
+            var energyCost = tower.EnergyCost;
 
             // Refund capacity to energy node
             if (towerToEnergy.TryGetValue(towerId, out var energyId))
             {
                 var energy = FindEnergyNode(energyId);
-                energy?.DisconnectTower(towerId, config.Stats.energyCost);
+                energy?.DisconnectTower(towerId, energyCost);
                 towerToEnergy.Remove(towerId);
             }
 
             // If this tower is an antenna, cascade disconnect all dependents
-            if (config.IsAntenna)
+            if (tower.IsAntenna)
             {
                 DisconnectAntennaDependents(towerId);
                 activeAntennas.Remove(towerId);
@@ -214,7 +239,7 @@ namespace Server.Managers
                 if (towerToEnergy.TryGetValue(antennaId, out var energyId))
                 {
                     var energy = FindEnergyNode(energyId);
-                    energy?.DisconnectTower(depId, dep.Config?.Stats.energyCost ?? 0);
+                    energy?.DisconnectTower(depId, dep.EnergyCost);
                 }
 
                 towerToEnergy.Remove(depId);
@@ -236,10 +261,10 @@ namespace Server.Managers
 
             foreach (var kvp in activeAntennas)
             {
-                var antennaConfig = kvp.Value.Config;
-                if (antennaConfig == null) continue;
+                if (!kvp.Value.IsAntenna)
+                    continue;
 
-                if (Vector2Int.Distance(pos, kvp.Value.GridPosition) > antennaConfig.Stats.antennaRange)
+                if (Vector2Int.Distance(pos, kvp.Value.GridPosition) > kvp.Value.AntennaRange)
                     continue;
 
                 if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)) continue;
@@ -249,6 +274,18 @@ namespace Server.Managers
             }
 
             return false;
+        }
+
+        public bool IsPositionInRange(Vector2Int pos, PlaceableType placeableType)
+        {
+            if (placeableType?.Prefab == null)
+                return false;
+
+            var towerRuntime = placeableType.Prefab.GetComponent<TowerRuntime>();
+            if (towerRuntime == null || towerRuntime.ClassType == null)
+                return true;
+
+            return IsPositionInRange(pos, towerRuntime.ClassType, towerRuntime.EnergyCost);
         }
 
         public float GetEnergyRangeForPosition(Vector2Int pos, ClassType classType, int energyCost)
@@ -268,9 +305,10 @@ namespace Server.Managers
 
             foreach (var kvp in activeAntennas)
             {
-                var cfg = kvp.Value.Config;
-                if (cfg == null) continue;
-                var range = cfg.Stats.antennaRange;
+                if (!kvp.Value.IsAntenna)
+                    continue;
+
+                var range = kvp.Value.AntennaRange;
                 if (Vector2Int.Distance(pos, kvp.Value.GridPosition) > range) continue;
 
                 if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)) continue;
@@ -303,9 +341,10 @@ namespace Server.Managers
 
             foreach (var kvp in activeAntennas)
             {
-                var cfg = kvp.Value.Config;
-                if (cfg == null) continue;
-                var range = cfg.Stats.antennaRange;
+                if (!kvp.Value.IsAntenna)
+                    continue;
+
+                var range = kvp.Value.AntennaRange;
                 if (Vector2Int.Distance(pos, kvp.Value.GridPosition) > range) continue;
 
                 if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)) continue;

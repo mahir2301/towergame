@@ -55,9 +55,9 @@ namespace Shared.Runtime
                 return true;
             }
 
-            if (TowerSpawnSystem.Instance == null)
+            if (PlaceableSpawnSystem.Instance == null)
             {
-                issue = "TowerSpawnSystem.Instance is missing.";
+                issue = "PlaceableSpawnSystem.Instance is missing.";
                 return true;
             }
 

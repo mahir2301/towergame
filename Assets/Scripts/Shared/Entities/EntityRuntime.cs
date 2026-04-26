@@ -9,13 +9,10 @@ namespace Shared.Entities
     public class EntityRuntime : NetworkBehaviour
     {
         private string pendingTypeId;
-        private EntityKind pendingKind = EntityKind.Unknown;
         private ulong pendingOwnerClientId = ulong.MaxValue;
         private bool hasPendingMetadata;
 
         private readonly NetworkVariable<uint> entityId = new(EntityId.InvalidValue,
-            NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        private readonly NetworkVariable<EntityKind> kind = new(EntityKind.Unknown,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         private readonly NetworkVariable<ulong> ownerClientId = new(ulong.MaxValue,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -23,7 +20,6 @@ namespace Shared.Entities
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         public EntityId EntityId => new(entityId.Value);
-        public EntityKind Kind => kind.Value;
         public ulong EntityOwnerClientId => ownerClientId.Value;
         public string EntityTypeId => entityTypeId.Value.ToString();
 
@@ -34,7 +30,6 @@ namespace Shared.Entities
             if (IsServer && hasPendingMetadata)
             {
                 entityTypeId.Value = pendingTypeId;
-                kind.Value = pendingKind;
                 ownerClientId.Value = pendingOwnerClientId;
                 hasPendingMetadata = false;
             }
@@ -59,14 +54,13 @@ namespace Shared.Entities
             base.OnNetworkDespawn();
         }
 
-        public void ConfigureServerMetadata(string typeId, EntityKind entityKind, ulong ownerId)
+        public void ConfigureServerMetadata(string typeId, ulong ownerId)
         {
             var networkManager = NetworkManager.Singleton;
             if (networkManager == null || !networkManager.IsServer)
                 return;
 
             pendingTypeId = typeId;
-            pendingKind = entityKind;
             pendingOwnerClientId = ownerId;
             hasPendingMetadata = true;
 
@@ -74,7 +68,6 @@ namespace Shared.Entities
                 return;
 
             entityTypeId.Value = typeId;
-            kind.Value = entityKind;
             ownerClientId.Value = ownerId;
             hasPendingMetadata = false;
         }
@@ -93,12 +86,6 @@ namespace Shared.Entities
                 return false;
             }
 
-            if (Kind == EntityKind.Unknown)
-            {
-                issue = "Kind is Unknown.";
-                return false;
-            }
-
             issue = null;
             return true;
         }
@@ -106,17 +93,10 @@ namespace Shared.Entities
         internal bool HasConfiguredSpawnMetadata(out string issue)
         {
             var configuredTypeId = hasPendingMetadata ? pendingTypeId : EntityTypeId;
-            var configuredKind = hasPendingMetadata ? pendingKind : Kind;
 
             if (string.IsNullOrEmpty(configuredTypeId))
             {
                 issue = "EntityTypeId is empty.";
-                return false;
-            }
-
-            if (configuredKind == EntityKind.Unknown)
-            {
-                issue = "Kind is Unknown.";
                 return false;
             }
 

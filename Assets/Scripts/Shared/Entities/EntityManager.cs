@@ -54,7 +54,11 @@ namespace Shared.Entities
                 return false;
             }
 
-            return TrySpawnByKind(EntityKind.Player, position, Quaternion.identity, clientId, out runtime);
+            var playerTypeId = GameRegistry.Instance?.RequiredPlayerEntityTypeId;
+            if (string.IsNullOrWhiteSpace(playerTypeId))
+                return false;
+
+            return TrySpawnByTypeId(playerTypeId, position, Quaternion.identity, clientId, out runtime);
         }
 
         public static bool TryDespawnPlayerForClient(ulong clientId)
@@ -76,16 +80,20 @@ namespace Shared.Entities
             return true;
         }
 
-        public static void GetEntitiesByKind(EntityKind kind, List<EntityRuntime> results)
+        public static void GetEntitiesWithTag(TagType tag, List<EntityRuntime> results)
         {
-            if (results == null)
+            if (results == null || tag == null)
                 return;
 
             results.Clear();
             foreach (var kvp in entitiesById)
             {
                 var runtime = kvp.Value;
-                if (runtime != null && runtime.Kind == kind)
+                if (runtime == null)
+                    continue;
+
+                var type = GameRegistry.Instance?.GetEntityType(runtime.EntityTypeId);
+                if (type != null && type.HasTag(tag))
                     results.Add(runtime);
             }
         }
@@ -128,30 +136,6 @@ namespace Shared.Entities
             return TrySpawn(type, position, rotation, ownerClientId, out runtime);
         }
 
-        public static bool TrySpawnByKind(EntityKind kind, Vector3 position, Quaternion rotation, ulong ownerClientId,
-            out EntityRuntime runtime)
-        {
-            runtime = null;
-
-            var registry = GameRegistry.Instance;
-            if (registry == null)
-            {
-                RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,
-                    $"Cannot spawn entity kind {kind} because GameRegistry is unavailable.");
-                return false;
-            }
-
-            var type = registry.GetEntityType(kind);
-            if (type == null)
-            {
-                RuntimeLog.Entity.Error(RuntimeLog.Code.EntityMissingTypeDefinition,
-                    $"Cannot spawn entity kind {kind} because no EntityType is registered.");
-                return false;
-            }
-
-            return TrySpawn(type, position, rotation, ownerClientId, out runtime);
-        }
-
         internal static bool TryRegisterRuntime(EntityRuntime runtime)
         {
             if (runtime == null)
@@ -178,7 +162,10 @@ namespace Shared.Entities
             if (runtime.EntityOwnerClientId != ulong.MaxValue)
                 GameEvents.RaiseEntityOwnerAssigned(runtime, runtime.EntityOwnerClientId);
 
-            if (runtime.Kind == EntityKind.Player && runtime.EntityOwnerClientId != ulong.MaxValue)
+            var playerTypeId = GameRegistry.Instance?.RequiredPlayerEntityTypeId;
+            if (!string.IsNullOrWhiteSpace(playerTypeId)
+                && runtime.EntityTypeId == playerTypeId
+                && runtime.EntityOwnerClientId != ulong.MaxValue)
             {
                 playerEntityByClient[runtime.EntityOwnerClientId] = runtime.EntityId.Value;
                 RuntimeLog.Entity.Info(RuntimeLog.Code.EntityPlayerAssigned,
@@ -186,7 +173,7 @@ namespace Shared.Entities
             }
 
             RuntimeLog.Entity.Info(RuntimeLog.Code.EntitySpawned,
-                $"Registered entity id={runtime.EntityId} kind={runtime.Kind} owner={runtime.EntityOwnerClientId}.");
+                $"Registered entity id={runtime.EntityId} type={runtime.EntityTypeId} owner={runtime.EntityOwnerClientId}.");
             GameEvents.RaiseEntitySpawned(runtime);
             return true;
         }
@@ -199,7 +186,10 @@ namespace Shared.Entities
             if (entitiesById.TryGetValue(runtime.EntityId.Value, out var existing) && existing == runtime)
                 entitiesById.Remove(runtime.EntityId.Value);
 
-            if (runtime.Kind == EntityKind.Player && runtime.EntityOwnerClientId != ulong.MaxValue
+            var playerTypeId = GameRegistry.Instance?.RequiredPlayerEntityTypeId;
+            if (!string.IsNullOrWhiteSpace(playerTypeId)
+                && runtime.EntityTypeId == playerTypeId
+                && runtime.EntityOwnerClientId != ulong.MaxValue
                 && playerEntityByClient.TryGetValue(runtime.EntityOwnerClientId, out var mappedId)
                 && mappedId == runtime.EntityId.Value)
             {
@@ -207,7 +197,7 @@ namespace Shared.Entities
             }
 
             RuntimeLog.Entity.Info(RuntimeLog.Code.EntityDespawned,
-                $"Unregistered entity id={runtime.EntityId} kind={runtime.Kind} owner={runtime.EntityOwnerClientId}.");
+                $"Unregistered entity id={runtime.EntityId} type={runtime.EntityTypeId} owner={runtime.EntityOwnerClientId}.");
             GameEvents.RaiseEntityDespawned(runtime);
         }
 
@@ -243,7 +233,7 @@ namespace Shared.Entities
             }
 
             runtime = Object.Instantiate(type.Prefab, position, rotation);
-            runtime.ConfigureServerMetadata(type.Id, type.Kind, ownerClientId);
+            runtime.ConfigureServerMetadata(type.Id, ownerClientId);
 
             if (!runtime.HasConfiguredSpawnMetadata(out var metadataIssue))
             {
@@ -292,14 +282,6 @@ namespace Shared.Entities
             {
                 issue = $"Rejected registration for entity id={runtime.EntityId}: missing EntityType '{runtime.EntityTypeId}'.";
                 code = RuntimeLog.Code.EntityMissingTypeDefinition;
-                return false;
-            }
-
-            if (runtime.Kind != type.Kind)
-            {
-                issue =
-                    $"Rejected registration for entity id={runtime.EntityId}: kind '{runtime.Kind}' does not match type '{type.Id}' kind '{type.Kind}'.";
-                code = RuntimeLog.Code.EntityInvalidCommandPayload;
                 return false;
             }
 

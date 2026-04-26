@@ -1,41 +1,34 @@
 using System;
 using Shared.Data;
 using Shared.Runtime;
+using Shared.Runtime.Placeables;
 using UnityEngine;
 
 namespace Shared
 {
     public static class ServerEvents
     {
-        public static event Action<ulong, TowerType, Vector2Int, Action<PlacementResult>> PlaceTowerRequested;
-        public static event Action<TowerRuntime> TowerSpawned;
-        public static event Action<TowerRuntime> TowerDespawned;
-        public static event Action<EnergyRuntime> EnergySpawned;
-        public static event Action<EnergyRuntime> EnergyDespawned;
-        public static event Action<NexusRuntime> NexusSpawned;
-        public static event Action<NexusRuntime> NexusDespawned;
+        public static event Action<ulong, PlaceableType, Vector2Int, Action<PlacementResponse>> PlaceablePlacementRequested;
+        public static event Action<PlaceableBehavior> PlaceableSpawned;
+        public static event Action<PlaceableBehavior> PlaceableDespawned;
 
-        public static bool TryRaisePlaceTowerRequested(ulong requesterClientId, TowerType config, Vector2Int gridPos,
-            out PlacementResult result)
+        public static bool TryRaisePlaceablePlacementRequested(ulong requesterClientId, PlaceableType type, Vector2Int gridPos,
+            out PlacementResponse response)
         {
-            result = PlacementResult.MissingDependencies;
-            if (PlaceTowerRequested == null)
+            response = PlacementResponse.Create(type != null ? type.Id : string.Empty, gridPos, false, PlacementCodes.MissingDependencies);
+            if (PlaceablePlacementRequested == null)
                 return false;
 
-            PlacementResult? requestResult = null;
-            PlaceTowerRequested.Invoke(requesterClientId, config, gridPos, r => requestResult = r);
+            PlacementResponse? requestResult = null;
+            PlaceablePlacementRequested.Invoke(requesterClientId, type, gridPos, r => requestResult = r);
             if (!requestResult.HasValue)
                 return false;
 
-            result = requestResult.Value;
+            response = requestResult.Value;
             return true;
         }
 
-        public static void RaiseTowerSpawned(TowerRuntime tower) => TowerSpawned?.Invoke(tower);
-        public static void RaiseTowerDespawned(TowerRuntime tower) => TowerDespawned?.Invoke(tower);
-        public static void RaiseEnergySpawned(EnergyRuntime energy) => EnergySpawned?.Invoke(energy);
-        public static void RaiseEnergyDespawned(EnergyRuntime energy) => EnergyDespawned?.Invoke(energy);
-        public static void RaiseNexusSpawned(NexusRuntime nexus) => NexusSpawned?.Invoke(nexus);
-        public static void RaiseNexusDespawned(NexusRuntime nexus) => NexusDespawned?.Invoke(nexus);
+        public static void RaisePlaceableSpawned(PlaceableBehavior placeable) => PlaceableSpawned?.Invoke(placeable);
+        public static void RaisePlaceableDespawned(PlaceableBehavior placeable) => PlaceableDespawned?.Invoke(placeable);
     }
 }

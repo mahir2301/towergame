@@ -5,21 +5,17 @@ using UnityEngine;
 
 namespace Shared.Runtime
 {
-    public class EnergyRuntime : NetworkBehaviour
+    public class EnergyRuntime : Placeables.PlaceableBehavior
     {
         [Header("Configuration")]
-        [SerializeField] private EnergyType config;
+        [SerializeField] private int energyRange = 20;
         [SerializeField] private int maxCapacity;
 
         private readonly NetworkVariable<int> currentCapacity = new();
 
-        private Vector2Int gridPosition;
-
-        public EnergyType Config => config;
-        public Vector2Int GridPosition { get => gridPosition; set => gridPosition = value; }
         public int MaxCapacity => maxCapacity;
         public int CurrentCapacity => currentCapacity.Value;
-        public int EnergyRange => config != null ? config.EnergyRange : 0;
+        public int EnergyRange => energyRange;
 
         public override void OnNetworkSpawn()
         {
@@ -28,27 +24,28 @@ namespace Shared.Runtime
             if (IsServer)
             {
                 currentCapacity.Value = maxCapacity;
-                ServerEvents.RaiseEnergySpawned(this);
+                ServerEvents.RaisePlaceableSpawned(this);
             }
 
-            GameEvents.RaiseEnergySpawned(this);
+            GameEvents.RaisePlaceableSpawned(this);
         }
 
         public override void OnNetworkDespawn()
         {
-            GameEvents.RaiseEnergyDespawned(this);
-
             if (IsServer)
-                ServerEvents.RaiseEnergyDespawned(this);
+                ServerEvents.RaisePlaceableDespawned(this);
+
+            GameEvents.RaisePlaceableDespawned(this);
 
             base.OnNetworkDespawn();
         }
 
-        public void Initialize(EnergyType energyConfig, int capacity, Vector2Int gridPos)
+        public void SetMaxCapacity(int capacity)
         {
-            config = energyConfig;
-            maxCapacity = capacity;
-            gridPosition = gridPos;
+            if (!RuntimeNet.IsServer)
+                return;
+
+            maxCapacity = Mathf.Max(0, capacity);
         }
 
         public bool TryConnectTower(ulong towerNetId, int energyCost)
@@ -75,7 +72,7 @@ namespace Shared.Runtime
 
         public bool CanConnectClass(ClassType classType)
         {
-            return classType != null && config != null && classType.CanConnectTo(config);
+            return classType != null && Type != null && classType.CanConnectTo(Type);
         }
     }
 }

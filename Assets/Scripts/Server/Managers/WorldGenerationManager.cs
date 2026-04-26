@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Shared.Data;
 using Shared.Determinism;
 using Shared.Grid;
@@ -27,7 +28,8 @@ namespace Server.Managers
         [SerializeField] private int defaultMaxCapacity = 100;
         [SerializeField] private int maxAttemptsPerNode = 100;
         [SerializeField] private int edgePadding = 2;
-        [SerializeField] private string[] energyTypeIds;
+        [SerializeField] private string nexusPlaceableTypeId;
+        [SerializeField] private string[] energyPlaceableTypeIds;
 
         [Header("References")]
         [SerializeField] private GridManager gridManager;
@@ -80,7 +82,7 @@ namespace Server.Managers
 
             try
             {
-                SpawnNexus(seed);
+                SpawnNexus();
                 RuntimeLog.WorldGen.Info(RuntimeLog.Code.WorldGenNexusDone,
                     "Nexus spawn complete.");
             }
@@ -121,27 +123,28 @@ namespace Server.Managers
             PublishWorldState();
         }
 
-        private void SpawnNexus(int seed)
+        private void SpawnNexus()
         {
             var registry = GameRegistry.Instance;
             if (registry == null)
                 throw new InvalidOperationException("GameRegistry is missing at Resources/GameRegistry.");
 
-            var nexusConfig = registry.GetNexusType();
-            if (nexusConfig == null)
-                throw new InvalidOperationException("No NexusType found in GameRegistry.");
+            var nexusType = ResolveNexusPlaceableType(registry);
+            if (nexusType == null)
+                throw new InvalidOperationException("No valid nexus PlaceableType found in GameRegistry.");
 
             var size = gridManager.GridSize;
             nexusCenter = new Vector2Int(size.x / 2, size.y / 2);
             var halfSize = NexusRuntime.NexusSize / 2;
             var gridPos = new Vector2Int(nexusCenter.x - halfSize, nexusCenter.y - halfSize);
+            var nexusRuntime = nexusType.Prefab != null ? nexusType.Prefab.GetComponent<NexusRuntime>() : null;
 
             RuntimeLog.WorldGen.Info(RuntimeLog.Code.WorldGenNexusDone,
                 $"Spawning nexus: gridSize={size}, center={nexusCenter}, gridPos={gridPos}, " +
-                $"prefab={nexusConfig.Prefab != null}, hasNexusRuntime={nexusConfig.Prefab?.GetComponent<NexusRuntime>() != null}, " +
-                $"cellsAvailable={gridManager.IsCellAvailable(gridPos, new Vector2Int(NexusRuntime.NexusSize, NexusRuntime.NexusSize), false)}.");
+                $"placeableTypeId={nexusType.Id}, prefab={nexusType.Prefab != null}, hasNexusRuntime={nexusRuntime != null}, " +
+                $"cellsAvailable={gridManager.IsCellAvailable(gridPos, new Vector2Int(NexusRuntime.NexusSize, NexusRuntime.NexusSize), null)}.");
 
-            if (!serverSpawnManager.TryPlaceNexusRuntime(gridPos, nexusConfig, out _))
+            if (!serverSpawnManager.TryPlacePlaceableRuntime(gridPos, nexusType, out _, out _))
                 throw new InvalidOperationException($"Failed to place nexus at {gridPos}.");
         }
 
@@ -160,19 +163,64 @@ namespace Server.Managers
             var size = gridManager.GridSize;
             var waterCells = GridWaterGenerator.Generate(size, minDistanceFromEdge, waterNoiseScale, waterThreshold,
                 waterSmoothPasses, random, nexusCenter, nexusExclusionZone);
-            gridManager.SetTerrainCells(waterCells);
+
+            var registry = GameRegistry.Instance;
+            var waterTag = registry?.Tags.FirstOrDefault(t => t != null && t.Id == "water");
+            TileType waterTile = null;
+            TileType defaultTile = null;
+
+            if (registry != null)
+            {
+                var tiles = registry.TileTypes;
+                for (var i = 0; i < tiles.Count; i++)
+                {
+                    var tile = tiles[i];
+                    if (tile == null)
+                        continue;
+
+                    if (defaultTile == null)
+                        defaultTile = tile;
+
+                    if (waterTag != null && tile.HasTag(waterTag))
+                    {
+                        waterTile = tile;
+                        break;
+                    }
+                }
+            }
+
+            var flattenedTiles = new TileType[size.x * size.y];
+            for (var y = 0; y < size.y; y++)
+            {
+                for (var x = 0; x < size.x; x++)
+                {
+                    var pos = new Vector2Int(x, y);
+                    var index = y * size.x + x;
+                    if (waterCells.Contains(pos) && waterTile != null)
+                        flattenedTiles[index] = waterTile;
+                    else
+                        flattenedTiles[index] = defaultTile;
+                }
+            }
+
+            gridManager.SetTileMap(flattenedTiles);
+            var tileIds = new string[flattenedTiles.Length];
+            for (var i = 0; i < flattenedTiles.Length; i++)
+                tileIds[i] = flattenedTiles[i] != null ? flattenedTiles[i].Id : string.Empty;
+
+            worldGenerationState.SetServerTileMap(tileIds);
         }
 
         private void SpawnEnergySources(int seed)
         {
             var random = new System.Random(seed + 1);
             var size = gridManager.GridSize;
-            var energyTypes = ResolveEnergyTypes();
+            var energyPlaceables = ResolveEnergyPlaceables();
 
             GridEnergySourceGenerator.Spawn(
                 random,
                 size,
-                energyTypes,
+                energyPlaceables,
                 gridManager,
                 serverSpawnManager,
                 nodeCount,
@@ -184,42 +232,74 @@ namespace Server.Managers
                 nexusExclusionZone);
         }
 
-        private EnergyType[] ResolveEnergyTypes()
+        private PlaceableType ResolveNexusPlaceableType(GameRegistry registry)
+        {
+            if (!string.IsNullOrWhiteSpace(nexusPlaceableTypeId))
+            {
+                var configured = registry.GetPlaceableType(nexusPlaceableTypeId);
+                if (configured != null && configured.Prefab != null
+                                       && configured.Prefab.GetComponent<NexusRuntime>() != null)
+                {
+                    return configured;
+                }
+
+                RuntimeLog.WorldGen.Warning(RuntimeLog.Code.WorldGenNexusFailed,
+                    $"Invalid nexusPlaceableTypeId '{nexusPlaceableTypeId}'. Falling back to first nexus-like PlaceableType.");
+            }
+
+            var placeables = registry.PlaceableTypes;
+            for (var i = 0; i < placeables.Count; i++)
+            {
+                var candidate = placeables[i];
+                if (candidate == null || candidate.Prefab == null)
+                    continue;
+
+                if (candidate.Prefab.GetComponent<NexusRuntime>() != null)
+                    return candidate;
+            }
+
+            return null;
+        }
+
+        private PlaceableType[] ResolveEnergyPlaceables()
         {
             var registry = GameRegistry.Instance;
             if (registry == null)
                 throw new InvalidOperationException("GameRegistry is missing at Resources/GameRegistry.");
 
-            var resolved = new List<EnergyType>();
-            if (energyTypeIds != null && energyTypeIds.Length > 0)
+            var resolved = new List<PlaceableType>();
+            if (energyPlaceableTypeIds != null && energyPlaceableTypeIds.Length > 0)
             {
-                for (var i = 0; i < energyTypeIds.Length; i++)
+                for (var i = 0; i < energyPlaceableTypeIds.Length; i++)
                 {
-                    var id = energyTypeIds[i];
+                    var id = energyPlaceableTypeIds[i];
                     if (string.IsNullOrWhiteSpace(id))
                         continue;
 
-                    var type = registry.GetEnergyType(id);
-                    if (type != null)
-                        resolved.Add(type);
-                    else
+                    var type = registry.GetPlaceableType(id);
+                    if (type == null || type.Prefab == null || type.Prefab.GetComponent<EnergyRuntime>() == null)
+                    {
                         RuntimeLog.WorldGen.Warning(RuntimeLog.Code.WorldGenEnergyFailed,
-                            $"Unknown energy type id '{id}' in WorldGenerationManager.energyTypeIds.");
+                            $"Unknown or non-energy placeable id '{id}' in WorldGenerationManager.energyPlaceableTypeIds.");
+                        continue;
+                    }
+
+                    resolved.Add(type);
                 }
             }
             else
             {
-                var energyTypes = registry.EnergyTypes;
-                for (var i = 0; i < energyTypes.Count; i++)
+                var placeables = registry.PlaceableTypes;
+                for (var i = 0; i < placeables.Count; i++)
                 {
-                    var type = energyTypes[i];
-                    if (type != null)
+                    var type = placeables[i];
+                    if (type != null && type.Prefab != null && type.Prefab.GetComponent<EnergyRuntime>() != null)
                         resolved.Add(type);
                 }
             }
 
             if (resolved.Count == 0)
-                throw new InvalidOperationException("No valid EnergyType entries resolved from GameRegistry.");
+                throw new InvalidOperationException("No valid energy PlaceableType entries resolved from GameRegistry.");
 
             return resolved.ToArray();
         }

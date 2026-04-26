@@ -5,22 +5,24 @@ using UnityEngine;
 
 namespace Shared.Runtime
 {
-    public class TowerRuntime : NetworkBehaviour
+    public class TowerRuntime : Placeables.PlaceableBehavior
     {
         [Header("Configuration")]
-        [SerializeField] private TowerType config;
+        [SerializeField] private ClassType classType;
+        [SerializeField] private float maxHealth = 100f;
+        [SerializeField] private int energyCost;
+        [SerializeField] private int antennaRange;
 
         private readonly NetworkVariable<float> currentHealth = new();
         private readonly NetworkVariable<bool> isPowered = new();
         private readonly NetworkVariable<ulong> connectedEnergyId = new(ulong.MaxValue);
         private readonly NetworkVariable<ulong> connectedViaAntennaId = new(ulong.MaxValue);
 
-        private Vector2Int gridPosition;
-
-        public TowerType Config => config;
-        public Vector2Int GridPosition { get => gridPosition; set => gridPosition = value; }
-        public Vector2Int Size => config != null ? config.Size : Vector2Int.one;
-        public bool CanBePlacedOnWater => config != null && config.CanBePlacedOnWater;
+        public ClassType ClassType => classType;
+        public int EnergyCost => energyCost;
+        public int AntennaRange => antennaRange;
+        public bool IsAntenna => antennaRange > 0;
+        public Vector2Int Size => Type != null ? Type.Size : Vector2Int.one;
         public float CurrentHealth => currentHealth.Value;
         public bool IsPowered => isPowered.Value;
         public ulong ConnectedEnergyId => connectedEnergyId.Value;
@@ -32,28 +34,21 @@ namespace Shared.Runtime
 
             if (IsServer)
             {
-                if (config != null)
-                    currentHealth.Value = config.Stats.maxHealth;
-                ServerEvents.RaiseTowerSpawned(this);
+                currentHealth.Value = Mathf.Max(0f, maxHealth);
+                ServerEvents.RaisePlaceableSpawned(this);
             }
 
-            GameEvents.RaiseTowerSpawned(this);
+            GameEvents.RaisePlaceableSpawned(this);
         }
 
         public override void OnNetworkDespawn()
         {
-            GameEvents.RaiseTowerDespawned(this);
-
             if (IsServer)
-                ServerEvents.RaiseTowerDespawned(this);
+                ServerEvents.RaisePlaceableDespawned(this);
+
+            GameEvents.RaisePlaceableDespawned(this);
 
             base.OnNetworkDespawn();
-        }
-
-        public void Initialize(TowerType towerConfig, Vector2Int gridPos)
-        {
-            config = towerConfig;
-            gridPosition = gridPos;
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -68,8 +63,10 @@ namespace Shared.Runtime
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RepairServerRpc(float amount)
         {
-            if (!IsServer || config == null) return;
-            currentHealth.Value = Mathf.Min(config.Stats.maxHealth, currentHealth.Value + amount);
+            if (!IsServer)
+                return;
+
+            currentHealth.Value = Mathf.Min(maxHealth, currentHealth.Value + amount);
         }
 
         public void SetPowered(bool powered)

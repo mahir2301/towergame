@@ -179,7 +179,9 @@ namespace Shared.Runtime
         private void SpawnProjectile(Vector3 targetPosition, WeaponType config)
         {
             var startPos = transform.position + Vector3.up * 1.5f;
-            if (!EntityManager.TrySpawnByKind(EntityKind.Projectile, startPos, Quaternion.identity, ulong.MaxValue,
+            var projectileTypeId = GameRegistry.Instance?.RequiredProjectileEntityTypeId;
+            if (string.IsNullOrWhiteSpace(projectileTypeId)
+                || !EntityManager.TrySpawnByTypeId(projectileTypeId, startPos, Quaternion.identity, ulong.MaxValue,
                     out var projectileEntity))
             {
                 RuntimeLog.Entity.Error(RuntimeLog.Code.EntitySpawnFailed,

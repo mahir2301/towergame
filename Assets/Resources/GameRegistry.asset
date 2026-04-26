@@ -12,33 +12,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b97952a218544f6290c76135b27837bd, type: 3}
   m_Name: GameRegistry
   m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Data.GameRegistry
-  energyTypes:
-  - {fileID: 11400000, guid: cbb71f6aa217ca747a6cbf183665092b, type: 2}
-  - {fileID: 11400000, guid: ad133d9289e9be445b0b7dc6531d75fa, type: 2}
-  - {fileID: 11400000, guid: 3b12718c566d9c347807baedd01849d4, type: 2}
-  - {fileID: 11400000, guid: b52d8142ae17cf44fa8dcfdb0967e115, type: 2}
   classTypes:
-  - {fileID: 11400000, guid: 54de1a5c92312f840a6c90a4d37d3b8e, type: 2}
-  - {fileID: 11400000, guid: 6d521e4068922644a98d342009925aa0, type: 2}
-  - {fileID: 11400000, guid: 4db51c9f4fcc09d419954139b998794f, type: 2}
-  - {fileID: 11400000, guid: 406d1cdfea4bfdf48b58869e79983afc, type: 2}
-  - {fileID: 11400000, guid: 853673f9e3901194482b4178fa53fc29, type: 2}
-  towerTypes:
-  - {fileID: 11400000, guid: fc5c073fca38c284982ea263383a1a7d, type: 2}
-  - {fileID: 11400000, guid: 4c5f5f9aa03ab254d921e0a1cee52dac, type: 2}
-  - {fileID: 11400000, guid: 6eae94ff71299dd4487d7350613bb561, type: 2}
-  - {fileID: 11400000, guid: c62d1f645e41f964f8bc65eb24ce9a77, type: 2}
-  - {fileID: 11400000, guid: dbc6d90252179bd49b5f051499b4427f, type: 2}
-  - {fileID: 11400000, guid: 8cc4fc1352bbe8c4b950a8a176e701ef, type: 2}
-  - {fileID: 11400000, guid: 1847706b3890bb3499f0ca53a07a8a00, type: 2}
-  - {fileID: 11400000, guid: 29ed46033bd3db8439f829994f6717c3, type: 2}
-  - {fileID: 11400000, guid: a62896ea46e0857499849867a2f8aabf, type: 2}
-  - {fileID: 11400000, guid: 3bab7a44e7a0fbc419671d3f1496e918, type: 2}
-  - {fileID: 11400000, guid: 421f28447705cd047b369eefe485c64a, type: 2}
+    items:
+    - {fileID: 11400000, guid: 54de1a5c92312f840a6c90a4d37d3b8e, type: 2}
+    - {fileID: 11400000, guid: 6d521e4068922644a98d342009925aa0, type: 2}
+    - {fileID: 11400000, guid: 4db51c9f4fcc09d419954139b998794f, type: 2}
+    - {fileID: 11400000, guid: 406d1cdfea4bfdf48b58869e79983afc, type: 2}
+    - {fileID: 11400000, guid: 853673f9e3901194482b4178fa53fc29, type: 2}
   weaponTypes:
-  - {fileID: 11400000, guid: e0f9e2b79b60c434ab8f45f7fb65711c, type: 2}
+    items:
+    - {fileID: 11400000, guid: e0f9e2b79b60c434ab8f45f7fb65711c, type: 2}
   entityTypes:
-  - {fileID: 11400000, guid: 4c3830db8f7b42e0b9f0c2d045e2d73c, type: 2}
-  - {fileID: 11400000, guid: 554a4adfa20d47d5bb6d84f7afbdfb47, type: 2}
-  nexusTypes:
-  - {fileID: 11400000, guid: f198924f58cbb564b8d18106197f74e6, type: 2}
+    items:
+    - {fileID: 11400000, guid: 4c3830db8f7b42e0b9f0c2d045e2d73c, type: 2}
+    - {fileID: 11400000, guid: 554a4adfa20d47d5bb6d84f7afbdfb47, type: 2}
+  placeableTypes:
+    items:
+    - {fileID: 11400000, guid: fc5c073fca38c284982ea263383a1a7d, type: 2}
+    - {fileID: 11400000, guid: 4c5f5f9aa03ab254d921e0a1cee52dac, type: 2}
+    - {fileID: 11400000, guid: 6eae94ff71299dd4487d7350613bb561, type: 2}
+    - {fileID: 11400000, guid: c62d1f645e41f964f8bc65eb24ce9a77, type: 2}
+    - {fileID: 11400000, guid: cbb71f6aa217ca747a6cbf183665092b, type: 2}
+    - {fileID: 11400000, guid: ad133d9289e9be445b0b7dc6531d75fa, type: 2}
+    - {fileID: 11400000, guid: b52d8142ae17cf44fa8dcfdb0967e115, type: 2}
+    - {fileID: 11400000, guid: 3b12718c566d9c347807baedd01849d4, type: 2}
+    - {fileID: 11400000, guid: f198924f58cbb564b8d18106197f74e6, type: 2}
+    - {fileID: 11400000, guid: 8cc4fc1352bbe8c4b950a8a176e701ef, type: 2}
+    - {fileID: 11400000, guid: dbc6d90252179bd49b5f051499b4427f, type: 2}
+    - {fileID: 11400000, guid: 1847706b3890bb3499f0ca53a07a8a00, type: 2}
+    - {fileID: 11400000, guid: 29ed46033bd3db8439f829994f6717c3, type: 2}
+    - {fileID: 11400000, guid: a62896ea46e0857499849867a2f8aabf, type: 2}
+    - {fileID: 11400000, guid: 3bab7a44e7a0fbc419671d3f1496e918, type: 2}
+    - {fileID: 11400000, guid: 421f28447705cd047b369eefe485c64a, type: 2}
+  tagTypes:
+    items: []
+  tileTypes:
+    items:
+    - {fileID: 11400000, guid: 8c0b3fc29659042049b4490cbb91b512, type: 2}
+    - {fileID: 11400000, guid: 4d4fb7babb778459b8143cd6b61f9b63, type: 2}
+  requiredPlayerEntityTypeId: player
+  requiredProjectileEntityTypeId: projectile

@@ -52,10 +52,10 @@ namespace Shared.Runtime
                 hasError = true;
             }
 
-            if (Object.FindFirstObjectByType<TowerSpawnSystem>() == null)
+            if (Object.FindFirstObjectByType<PlaceableSpawnSystem>() == null)
             {
                 RuntimeLog.Health.Error(RuntimeLog.Code.HealthMissingDependency,
-                    $"Missing TowerSpawnSystem in scene '{sceneName}'.");
+                    $"Missing PlaceableSpawnSystem in scene '{sceneName}'.");
                 hasError = true;
             }
 

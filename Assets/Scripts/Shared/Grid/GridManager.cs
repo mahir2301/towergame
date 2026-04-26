@@ -1,32 +1,19 @@
 using System.Collections.Generic;
+using Shared.Data;
 using Shared.Utilities;
 using UnityEngine;
 
 namespace Shared.Grid
 {
-    public enum GridTerrainType : byte
-    {
-        Empty = 0,
-        Water = 1,
-    }
-
-    public enum GridObjectKind : byte
-    {
-        Unknown = 0,
-        EnergySource = 1,
-        Tower = 2,
-        Nexus = 3,
-    }
-
     public sealed class GridObjectRecord
     {
         public int Id;
-        public GridObjectKind Kind;
         public Vector2Int GridPosition;
         public Vector2Int Size;
-        public string ConfigId;
+        public string TypeId;
         public ulong RuntimeNetId;
         public GameObject RuntimeObject;
+        public List<TagType> Tags;
     }
 
     public class GridManager : MonoBehaviour
@@ -37,7 +24,9 @@ namespace Shared.Grid
 
         private readonly Dictionary<Vector2Int, int> occupiedCells = new();
         private readonly Dictionary<int, GridObjectRecord> gridObjects = new();
-        private GridTerrainType[] terrainMap;
+        [SerializeField] private TileType defaultTileType;
+
+        private string[] tileTypeIds;
         private int nextObjectId = 1;
 
         public Vector2Int GridSize => gridSize;
@@ -58,39 +47,44 @@ namespace Shared.Grid
         public void ClearWorldState()
         {
             EnsureTerrainMap();
-            for (var i = 0; i < terrainMap.Length; i++)
-                terrainMap[i] = GridTerrainType.Empty;
+            var defaultId = defaultTileType != null ? defaultTileType.Id : string.Empty;
+            for (var i = 0; i < tileTypeIds.Length; i++)
+                tileTypeIds[i] = defaultId;
 
             occupiedCells.Clear();
             gridObjects.Clear();
             nextObjectId = 1;
         }
 
-        public void SetTerrainCells(IReadOnlyCollection<Vector2Int> waterCells)
+        public void SetTileMap(TileType[] flattenedTiles)
         {
             EnsureTerrainMap();
-            for (var i = 0; i < terrainMap.Length; i++)
-                terrainMap[i] = GridTerrainType.Empty;
+            if (flattenedTiles == null)
+                return;
 
-            foreach (var cell in waterCells)
+            var count = Mathf.Min(tileTypeIds.Length, flattenedTiles.Length);
+            for (var i = 0; i < count; i++)
             {
-                if (!IsValidPosition(cell))
-                    continue;
-                terrainMap[ToIndex(cell)] = GridTerrainType.Water;
+                tileTypeIds[i] = flattenedTiles[i] != null ? flattenedTiles[i].Id : string.Empty;
             }
+
+            for (var i = count; i < tileTypeIds.Length; i++)
+                tileTypeIds[i] = string.Empty;
         }
 
-        public GridTerrainType GetTerrainType(Vector2Int gridPos)
+        public TileType GetTileTypeAt(Vector2Int gridPos)
         {
             if (!IsValidPosition(gridPos))
-                return GridTerrainType.Empty;
+                return null;
+
             EnsureTerrainMap();
-            return terrainMap[ToIndex(gridPos)];
+            return GameRegistry.Instance?.GetTileType(tileTypeIds[ToIndex(gridPos)]);
         }
 
-        public bool IsWaterCell(Vector2Int gridPos)
+        public bool CellHasTileTag(Vector2Int gridPos, TagType tag)
         {
-            return GetTerrainType(gridPos) == GridTerrainType.Water;
+            var tile = GetTileTypeAt(gridPos);
+            return tile != null && tile.HasTag(tag);
         }
 
         public Vector2Int WorldToGrid(Vector3 worldPos)
@@ -119,7 +113,7 @@ namespace Shared.Grid
                    && gridPos.y >= 0 && gridPos.y < gridSize.y;
         }
 
-        public bool IsCellAvailable(Vector2Int gridPos, Vector2Int size, bool allowWater = false)
+        public bool IsCellAvailable(Vector2Int gridPos, Vector2Int size, IReadOnlyList<TileType> allowedTileTypes)
         {
             for (var x = 0; x < size.x; x++)
             {
@@ -128,7 +122,9 @@ namespace Shared.Grid
                     var checkPos = new Vector2Int(gridPos.x + x, gridPos.y + y);
                     if (!IsValidPosition(checkPos) || occupiedCells.ContainsKey(checkPos))
                         return false;
-                    if (!allowWater && IsWaterCell(checkPos))
+
+                    var tileType = GetTileTypeAt(checkPos);
+                    if (!IsTileAllowed(tileType, allowedTileTypes))
                         return false;
                 }
             }
@@ -138,7 +134,7 @@ namespace Shared.Grid
 
         public void RegisterOccupiedCells(Vector2Int gridPos, Vector2Int size, GameObject obj)
         {
-            TryRegisterOccupancy(GridObjectKind.Unknown, gridPos, size, true, string.Empty, out _);
+            TryRegisterOccupancy(string.Empty, gridPos, size, out _);
         }
 
         public void UnregisterOccupiedCells(Vector2Int gridPos, Vector2Int size)
@@ -152,22 +148,22 @@ namespace Shared.Grid
             }
         }
 
-        public bool TryRegisterOccupancy(GridObjectKind kind, Vector2Int gridPos, Vector2Int size, bool allowWater,
-            string configId, out GridObjectRecord record)
+        public bool TryRegisterOccupancy(string typeId, Vector2Int gridPos, Vector2Int size,
+            out GridObjectRecord record)
         {
             record = null;
-            if (!IsCellAvailable(gridPos, size, allowWater))
+            if (!IsCellAvailable(gridPos, size, null))
                 return false;
 
             record = new GridObjectRecord
             {
                 Id = nextObjectId++,
-                Kind = kind,
                 GridPosition = gridPos,
                 Size = size,
-                ConfigId = configId,
+                TypeId = typeId,
                 RuntimeNetId = ulong.MaxValue,
                 RuntimeObject = null,
+                Tags = null,
             };
 
             gridObjects[record.Id] = record;
@@ -194,21 +190,38 @@ namespace Shared.Grid
                 record.RuntimeNetId = netId;
         }
 
-        public static Vector3 TowerWorldPos(Vector2Int gridPos, Shared.Data.TowerType config)
+        public static Vector3 PlaceableWorldPos(Vector2Int gridPos, PlaceableType config)
         {
             if (Instance == null)
                 return Vector3.zero;
 
             var size = config != null ? config.Size : Vector2Int.one;
-            var offset = new Vector3(0f, 1f, 0f);
+            var offset = config != null ? config.PlacementOffset : Vector3.zero;
             return Instance.GridToWorld(gridPos, size, 0f) + offset;
+        }
+
+        private static bool IsTileAllowed(TileType tileType, IReadOnlyList<TileType> allowedTileTypes)
+        {
+            if (allowedTileTypes == null || allowedTileTypes.Count == 0)
+                return true;
+
+            if (tileType == null)
+                return false;
+
+            for (var i = 0; i < allowedTileTypes.Count; i++)
+            {
+                if (allowedTileTypes[i] == tileType)
+                    return true;
+            }
+
+            return false;
         }
 
         private void EnsureTerrainMap()
         {
             var expectedLength = Mathf.Max(1, gridSize.x * gridSize.y);
-            if (terrainMap == null || terrainMap.Length != expectedLength)
-                terrainMap = new GridTerrainType[expectedLength];
+            if (tileTypeIds == null || tileTypeIds.Length != expectedLength)
+                tileTypeIds = new string[expectedLength];
         }
 
         private int ToIndex(Vector2Int gridPos)
