@@ -11,7 +11,6 @@ namespace Shared.Runtime
         [SerializeField] private ClassType classType;
         [SerializeField] private float maxHealth = 100f;
         [SerializeField] private int energyCost;
-        [SerializeField] private int antennaRange;
 
         private readonly NetworkVariable<float> currentHealth = new();
         private readonly NetworkVariable<bool> isPowered = new();
@@ -20,8 +19,6 @@ namespace Shared.Runtime
 
         public ClassType ClassType => classType;
         public int EnergyCost => energyCost;
-        public int AntennaRange => antennaRange;
-        public bool IsAntenna => antennaRange > 0;
         public Vector2Int Size => Type != null ? Type.Size : Vector2Int.one;
         public float CurrentHealth => currentHealth.Value;
         public bool IsPowered => isPowered.Value;

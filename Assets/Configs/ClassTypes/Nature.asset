@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Data.ClassType
   id: nature
   displayName: Nature
-  compatibleEnergyTypes:
+  compatibleEnergyPlaceables:
   - {fileID: 11400000, guid: b52d8142ae17cf44fa8dcfdb0967e115, type: 2}

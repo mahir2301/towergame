@@ -28,8 +28,8 @@ namespace Server.Managers
         [SerializeField] private int defaultMaxCapacity = 100;
         [SerializeField] private int maxAttemptsPerNode = 100;
         [SerializeField] private int edgePadding = 2;
-        [SerializeField] private string nexusPlaceableTypeId;
-        [SerializeField] private string[] energyPlaceableTypeIds;
+        [SerializeField] private PlaceableType nexusPlaceableType;
+        [SerializeField] private PlaceableType[] energyPlaceables;
 
         [Header("References")]
         [SerializeField] private GridManager gridManager;
@@ -234,17 +234,16 @@ namespace Server.Managers
 
         private PlaceableType ResolveNexusPlaceableType(GameRegistry registry)
         {
-            if (!string.IsNullOrWhiteSpace(nexusPlaceableTypeId))
+            if (nexusPlaceableType != null && nexusPlaceableType.Prefab != null
+                                          && nexusPlaceableType.Prefab.GetComponent<NexusRuntime>() != null)
             {
-                var configured = registry.GetPlaceableType(nexusPlaceableTypeId);
-                if (configured != null && configured.Prefab != null
-                                       && configured.Prefab.GetComponent<NexusRuntime>() != null)
-                {
-                    return configured;
-                }
+                return nexusPlaceableType;
+            }
 
+            if (nexusPlaceableType != null)
+            {
                 RuntimeLog.WorldGen.Warning(RuntimeLog.Code.WorldGenNexusFailed,
-                    $"Invalid nexusPlaceableTypeId '{nexusPlaceableTypeId}'. Falling back to first nexus-like PlaceableType.");
+                    $"Invalid nexusPlaceableType '{nexusPlaceableType?.Id}'. Falling back to first nexus-like PlaceableType.");
             }
 
             var placeables = registry.PlaceableTypes;
@@ -268,19 +267,15 @@ namespace Server.Managers
                 throw new InvalidOperationException("GameRegistry is missing at Resources/GameRegistry.");
 
             var resolved = new List<PlaceableType>();
-            if (energyPlaceableTypeIds != null && energyPlaceableTypeIds.Length > 0)
+            if (energyPlaceables != null && energyPlaceables.Length > 0)
             {
-                for (var i = 0; i < energyPlaceableTypeIds.Length; i++)
+                for (var i = 0; i < energyPlaceables.Length; i++)
                 {
-                    var id = energyPlaceableTypeIds[i];
-                    if (string.IsNullOrWhiteSpace(id))
-                        continue;
-
-                    var type = registry.GetPlaceableType(id);
-                    if (type == null || type.Prefab == null || type.Prefab.GetComponent<EnergyRuntime>() == null)
+                    var type = energyPlaceables[i];
+                    if (type == null || type.Prefab == null || type.Prefab.GetComponent<EnergySourceRuntime>() == null)
                     {
                         RuntimeLog.WorldGen.Warning(RuntimeLog.Code.WorldGenEnergyFailed,
-                            $"Unknown or non-energy placeable id '{id}' in WorldGenerationManager.energyPlaceableTypeIds.");
+                            $"Invalid energy placeable at index {i} in WorldGenerationManager.energyPlaceables.");
                         continue;
                     }
 
@@ -293,7 +288,7 @@ namespace Server.Managers
                 for (var i = 0; i < placeables.Count; i++)
                 {
                     var type = placeables[i];
-                    if (type != null && type.Prefab != null && type.Prefab.GetComponent<EnergyRuntime>() != null)
+                    if (type != null && type.Prefab != null && type.Prefab.GetComponent<EnergySourceRuntime>() != null)
                         resolved.Add(type);
                 }
             }

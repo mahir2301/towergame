@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Shared.Runtime
 {
-    public class EnergyRuntime : Placeables.PlaceableBehavior
+    public class EnergySourceRuntime : Placeables.PlaceableBehavior
     {
         [Header("Configuration")]
         [SerializeField] private int energyRange = 20;

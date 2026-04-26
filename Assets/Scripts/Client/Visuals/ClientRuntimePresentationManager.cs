@@ -13,7 +13,7 @@ namespace Client.Visuals
     {
         [SerializeField] private GridManager gridManager;
 
-        private readonly Dictionary<ulong, EnergyRuntime> energyById = new();
+        private readonly Dictionary<ulong, EnergySourceRuntime> energyById = new();
         private readonly Dictionary<ulong, TowerRuntime> towerById = new();
         private readonly Dictionary<ulong, RangeIndicator> energyIndicators = new();
         private readonly Dictionary<ulong, RangeIndicator> towerIndicators = new();
@@ -50,10 +50,10 @@ namespace Client.Visuals
                 if (!towerById.TryGetValue(kvp.Key, out var tower) || tower == null || !tower.IsSpawned || kvp.Value == null)
                     continue;
 
-                if (!tower.IsAntenna)
+                if (!tower.TryGetComponent<AntennaRuntime>(out var antenna))
                     continue;
 
-                kvp.Value.UpdateRange(tower.AntennaRange, tower.IsPowered);
+                kvp.Value.UpdateRange(antenna.Range, tower.IsPowered);
             }
         }
 
@@ -62,7 +62,7 @@ namespace Client.Visuals
             if (!IsClientActive())
                 return;
 
-            var energies = FindObjectsByType<EnergyRuntime>(FindObjectsSortMode.None);
+            var energies = FindObjectsByType<EnergySourceRuntime>(FindObjectsSortMode.None);
             for (var i = 0; i < energies.Length; i++)
                 HandleEnergySpawned(energies[i]);
 
@@ -71,27 +71,27 @@ namespace Client.Visuals
                 HandleTowerSpawned(towers[i]);
         }
 
-        private void HandleEnergySpawned(EnergyRuntime energy)
+        private void HandleEnergySpawned(EnergySourceRuntime energySource)
         {
-            if (!IsClientActive() || energy == null || !energy.IsSpawned)
+            if (!IsClientActive() || energySource == null || !energySource.IsSpawned)
                 return;
 
-            var id = energy.NetworkObjectId;
+            var id = energySource.NetworkObjectId;
             if (energyById.ContainsKey(id))
                 return;
 
-            energyById[id] = energy;
-            WorldOverlayManager.Instance?.RegisterEnergy(energy);
-            gridManager?.RegisterOccupiedCells(energy.GridPosition, Vector2Int.one, energy.gameObject);
+            energyById[id] = energySource;
+            WorldOverlayManager.Instance?.RegisterEnergy(energySource);
+            gridManager?.RegisterOccupiedCells(energySource.GridPosition, Vector2Int.one, energySource.gameObject);
 
-            var indicator = CreateIndicator(energy.transform, "EnergyRangeIndicator");
-            indicator.ShowEnergy(energy.EnergyRange);
+            var indicator = CreateIndicator(energySource.transform, "EnergyRangeIndicator");
+            indicator.ShowEnergy(energySource.EnergyRange);
             energyIndicators[id] = indicator;
         }
 
         private void HandlePlaceableSpawned(PlaceableBehavior placeable)
         {
-            if (placeable is EnergyRuntime energy)
+            if (placeable is EnergySourceRuntime energy)
             {
                 HandleEnergySpawned(energy);
                 return;
@@ -103,7 +103,7 @@ namespace Client.Visuals
 
         private void HandlePlaceableDespawned(PlaceableBehavior placeable)
         {
-            if (placeable is EnergyRuntime energy)
+            if (placeable is EnergySourceRuntime energy)
             {
                 HandleEnergyDespawned(energy);
                 return;
@@ -113,14 +113,14 @@ namespace Client.Visuals
                 HandleTowerDespawned(tower);
         }
 
-        private void HandleEnergyDespawned(EnergyRuntime energy)
+        private void HandleEnergyDespawned(EnergySourceRuntime energySource)
         {
-            if (energy == null)
+            if (energySource == null)
                 return;
 
-            var id = energy.NetworkObjectId;
-            WorldOverlayManager.Instance?.UnregisterEnergy(energy);
-            gridManager?.UnregisterOccupiedCells(energy.GridPosition, Vector2Int.one);
+            var id = energySource.NetworkObjectId;
+            WorldOverlayManager.Instance?.UnregisterEnergy(energySource);
+            gridManager?.UnregisterOccupiedCells(energySource.GridPosition, Vector2Int.one);
             energyById.Remove(id);
 
             if (energyIndicators.TryGetValue(id, out var indicator) && indicator != null)
@@ -142,11 +142,11 @@ namespace Client.Visuals
             WorldOverlayManager.Instance?.RegisterTower(tower);
             gridManager?.RegisterOccupiedCells(tower.GridPosition, tower.Size, tower.gameObject);
 
-            if (!tower.IsAntenna)
+            if (!tower.TryGetComponent<AntennaRuntime>(out var antenna))
                 return;
 
             var indicator = CreateIndicator(tower.transform, "AntennaRangeIndicator");
-            indicator.Show(tower.AntennaRange, tower.IsPowered);
+            indicator.Show(antenna.Range, tower.IsPowered);
             towerIndicators[id] = indicator;
         }
 

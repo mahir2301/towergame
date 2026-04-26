@@ -6,21 +6,21 @@ namespace Shared.Data
     [Serializable]
     public class WeaponInstance
     {
-        [SerializeField] private string configId;
+        [SerializeField] private WeaponType config;
         [SerializeField] private float currentCooldown;
 
-        public string ConfigId => configId;
+        public WeaponType Config => config;
         public float CurrentCooldown => currentCooldown;
 
-        public WeaponInstance(WeaponType config)
+        public WeaponInstance(WeaponType weaponConfig)
         {
-            configId = config.Id;
+            config = weaponConfig;
             currentCooldown = 0f;
         }
 
         public WeaponType GetConfig()
         {
-            return GameRegistry.Instance?.GetWeaponType(configId);
+            return config;
         }
 
         public bool CanFire()

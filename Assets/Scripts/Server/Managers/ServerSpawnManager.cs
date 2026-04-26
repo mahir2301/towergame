@@ -125,7 +125,7 @@ namespace Server.Managers
 
             instance = Object.Instantiate(prefab, GridManager.PlaceableWorldPos(gridPos, type), Quaternion.identity);
             instance.Initialize(type, gridPos);
-            if (energyCapacityOverride >= 0 && instance is EnergyRuntime energy)
+            if (energyCapacityOverride >= 0 && instance is EnergySourceRuntime energy)
                 energy.SetMaxCapacity(energyCapacityOverride);
             instance.OnPlaced();
             gridManager.BindRuntimeObject(record.Id, instance.gameObject);

@@ -247,14 +247,14 @@ namespace Client.Controllers
             var towers = ClientObjectRegistry.Instance.Towers;
             foreach (var kvp in towers)
             {
-                var antenna = kvp.Value;
-                if (antenna == null || !antenna.IsSpawned || !antenna.IsPowered) continue;
-                if (!antenna.IsAntenna) continue;
+                var tower = kvp.Value;
+                if (tower == null || !tower.IsSpawned || !tower.IsPowered) continue;
+                if (!tower.TryGetComponent<AntennaRuntime>(out var antenna)) continue;
 
-                var range = antenna.AntennaRange;
-                if (Vector2Int.Distance(pos, antenna.GridPosition) > range) continue;
+                var range = antenna.Range;
+                if (Vector2Int.Distance(pos, tower.GridPosition) > range) continue;
 
-                var sourceEnergyId = antenna.ConnectedEnergyId;
+                var sourceEnergyId = tower.ConnectedEnergyId;
                 if (sourceEnergyId == ulong.MaxValue) continue;
 
                 if (energies.TryGetValue(sourceEnergyId, out var energy) && energy != null

@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6128694712437500793}
   - component: {fileID: 7041298858461334818}
-  - component: {fileID: 7006191506165279856}
+  - component: {fileID: -2705413563715850798}
   m_Layer: 0
   m_Name: ArcaneAntenna
   m_TagString: Untagged
@@ -59,7 +59,7 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &7006191506165279856
+--- !u!114 &-2705413563715850798
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -68,11 +68,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 6472781644849013702}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e13cc6fdd4c84813b980dc69fd5fa6f2, type: 3}
+  m_Script: {fileID: 11500000, guid: 133f784794e3148da9cbc978482f54c3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Shared::Shared.Runtime.TowerRuntime
+  m_EditorClassIdentifier: Shared::Shared.Runtime.AntennaRuntime
   ShowTopMostFoldoutHeaderGroup: 1
-  config: {fileID: 11400000, guid: fc5c073fca38c284982ea263383a1a7d, type: 2}
+  placeableTypeId: 
+  classType: {fileID: 11400000, guid: 54de1a5c92312f840a6c90a4d37d3b8e, type: 2}
+  maxHealth: 100
+  energyCost: 0
+  range: 10
 --- !u!1001 &5839234317917176008
 PrefabInstance:
   m_ObjectHideFlags: 0

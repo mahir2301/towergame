@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Data.ClassType
   id: medieval
   displayName: Medieval
-  compatibleEnergyTypes:
+  compatibleEnergyPlaceables:
   - {fileID: 11400000, guid: 3b12718c566d9c347807baedd01849d4, type: 2}

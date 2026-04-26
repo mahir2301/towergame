@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Data.ClassType
   id: neutral
   displayName: Neutral
-  compatibleEnergyTypes:
+  compatibleEnergyPlaceables:
   - {fileID: 11400000, guid: cbb71f6aa217ca747a6cbf183665092b, type: 2}
-  - {fileID: 11400000, guid: ad133d9289e9be445b0b7dc6531d75fa, type: 2}
   - {fileID: 11400000, guid: 3b12718c566d9c347807baedd01849d4, type: 2}
   - {fileID: 11400000, guid: b52d8142ae17cf44fa8dcfdb0967e115, type: 2}
+  - {fileID: 11400000, guid: ad133d9289e9be445b0b7dc6531d75fa, type: 2}

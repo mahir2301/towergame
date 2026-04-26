@@ -16,7 +16,7 @@ namespace Client.UI
         [SerializeField] private VisualTreeAsset towerTemplate;
 
         private VisualElement root;
-        private readonly Dictionary<EnergyRuntime, (VisualElement root, Label label)> energyOverlays = new();
+        private readonly Dictionary<EnergySourceRuntime, (VisualElement root, Label label)> energyOverlays = new();
         private readonly Dictionary<TowerRuntime, (VisualElement root, VisualElement indicator)> towerOverlays = new();
 
         private void Awake()
@@ -52,9 +52,9 @@ namespace Client.UI
             SingletonUtility.ClearIfCurrent(Instance, this, () => Instance = null);
         }
 
-        public void RegisterEnergy(EnergyRuntime energy)
+        public void RegisterEnergy(EnergySourceRuntime energySource)
         {
-            if (energyOverlays.ContainsKey(energy) || root == null || energyTemplate == null) return;
+            if (energyOverlays.ContainsKey(energySource) || root == null || energyTemplate == null) return;
 
             var overlay = energyTemplate.CloneTree();
             overlay.style.position = Position.Absolute;
@@ -67,14 +67,14 @@ namespace Client.UI
             }
 
             root.Add(overlay);
-            energyOverlays[energy] = (overlay, label);
+            energyOverlays[energySource] = (overlay, label);
         }
 
-        public void UnregisterEnergy(EnergyRuntime energy)
+        public void UnregisterEnergy(EnergySourceRuntime energySource)
         {
-            if (!energyOverlays.TryGetValue(energy, out var view)) return;
+            if (!energyOverlays.TryGetValue(energySource, out var view)) return;
             view.root.RemoveFromHierarchy();
-            energyOverlays.Remove(energy);
+            energyOverlays.Remove(energySource);
         }
 
         public void RegisterTower(TowerRuntime tower)

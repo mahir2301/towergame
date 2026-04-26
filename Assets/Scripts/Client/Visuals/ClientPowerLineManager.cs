@@ -61,7 +61,7 @@ namespace Client.Visuals
         }
 
         private static bool TryResolveSource(TowerRuntime tower,
-            IReadOnlyDictionary<ulong, EnergyRuntime> energyNodes,
+            IReadOnlyDictionary<ulong, EnergySourceRuntime> energyNodes,
             IReadOnlyDictionary<ulong, TowerRuntime> towers,
             out Transform source)
         {

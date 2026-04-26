@@ -38,7 +38,7 @@ namespace Server.Managers
                     continue;
 
                 var energyRuntime = energyPlaceable.Prefab != null
-                    ? energyPlaceable.Prefab.GetComponent<EnergyRuntime>()
+                    ? energyPlaceable.Prefab.GetComponent<EnergySourceRuntime>()
                     : null;
                 if (energyRuntime == null)
                     continue;

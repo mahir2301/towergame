@@ -11,11 +11,11 @@ namespace Client.Visuals
     {
         public static ClientObjectRegistry Instance { get; private set; }
 
-        private readonly Dictionary<ulong, EnergyRuntime> energyNodes = new();
+        private readonly Dictionary<ulong, EnergySourceRuntime> energyNodes = new();
         private readonly Dictionary<ulong, TowerRuntime> towers = new();
         private readonly SubscriptionGroup subscriptions = new();
 
-        public IReadOnlyDictionary<ulong, EnergyRuntime> EnergyNodes => energyNodes;
+        public IReadOnlyDictionary<ulong, EnergySourceRuntime> EnergyNodes => energyNodes;
         public IReadOnlyDictionary<ulong, TowerRuntime> Towers => towers;
 
         private void Awake()
@@ -52,7 +52,7 @@ namespace Client.Visuals
 
         private void OnPlaceableSpawned(PlaceableBehavior placeable)
         {
-            if (placeable is EnergyRuntime energy)
+            if (placeable is EnergySourceRuntime energy)
             {
                 if (energy.IsSpawned)
                     energyNodes[energy.NetworkObjectId] = energy;
@@ -65,7 +65,7 @@ namespace Client.Visuals
 
         private void OnPlaceableDespawned(PlaceableBehavior placeable)
         {
-            if (placeable is EnergyRuntime energy)
+            if (placeable is EnergySourceRuntime energy)
             {
                 energyNodes.Remove(energy.NetworkObjectId);
                 return;

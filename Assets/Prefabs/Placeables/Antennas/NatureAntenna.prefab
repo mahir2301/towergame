@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4724073119908961552}
   - component: {fileID: 7003784076842935770}
-  - component: {fileID: 2615902902954609104}
+  - component: {fileID: 7441026048651976071}
   m_Layer: 0
   m_Name: NatureAntenna
   m_TagString: Untagged
@@ -59,7 +59,7 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &2615902902954609104
+--- !u!114 &7441026048651976071
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -68,11 +68,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 8072591855888863033}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e13cc6fdd4c84813b980dc69fd5fa6f2, type: 3}
+  m_Script: {fileID: 11500000, guid: 133f784794e3148da9cbc978482f54c3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Shared::Shared.Runtime.TowerRuntime
+  m_EditorClassIdentifier: Shared::Shared.Runtime.AntennaRuntime
   ShowTopMostFoldoutHeaderGroup: 1
-  config: {fileID: 11400000, guid: 6eae94ff71299dd4487d7350613bb561, type: 2}
+  placeableTypeId: 
+  classType: {fileID: 11400000, guid: 4db51c9f4fcc09d419954139b998794f, type: 2}
+  maxHealth: 100
+  energyCost: 0
+  range: 10
 --- !u!1001 &7266841920989811006
 PrefabInstance:
   m_ObjectHideFlags: 0

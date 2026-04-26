@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8180949843529269463}
   - component: {fileID: 9061431845054925643}
-  - component: {fileID: 6755557795780062290}
+  - component: {fileID: 3289350955958557800}
   m_Layer: 0
   m_Name: MedievalAntenna
   m_TagString: Untagged
@@ -59,7 +59,7 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &6755557795780062290
+--- !u!114 &3289350955958557800
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -68,11 +68,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 1946773952065662183}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e13cc6fdd4c84813b980dc69fd5fa6f2, type: 3}
+  m_Script: {fileID: 11500000, guid: 133f784794e3148da9cbc978482f54c3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Shared::Shared.Runtime.TowerRuntime
+  m_EditorClassIdentifier: Shared::Shared.Runtime.AntennaRuntime
   ShowTopMostFoldoutHeaderGroup: 1
-  config: {fileID: 11400000, guid: 4c5f5f9aa03ab254d921e0a1cee52dac, type: 2}
+  placeableTypeId: 
+  classType: {fileID: 11400000, guid: 6d521e4068922644a98d342009925aa0, type: 2}
+  maxHealth: 100
+  energyCost: 0
+  range: 10
 --- !u!1001 &8464541605465917215
 PrefabInstance:
   m_ObjectHideFlags: 0

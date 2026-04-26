@@ -315,7 +315,7 @@ namespace Shared.Runtime
             if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(energyId, out var obj))
                 return PlayerActionResult.RejectedInvalidEnergyTarget;
 
-            var energy = obj.GetComponent<EnergyRuntime>();
+            var energy = obj.GetComponent<EnergySourceRuntime>();
             if (energy == null || !energy.IsSpawned)
                 return PlayerActionResult.RejectedInvalidEnergyTarget;
 
@@ -331,7 +331,7 @@ namespace Shared.Runtime
             if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(connectedEnergyId.Value, out var obj))
                 return false;
 
-            var energy = obj.GetComponent<EnergyRuntime>();
+            var energy = obj.GetComponent<EnergySourceRuntime>();
             if (energy == null || !energy.IsSpawned) return false;
             if (!energy.CanConnectClass(classType)) return false;
             if (!energy.HasCapacity(amount)) return false;

@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.Shared.Data.ClassType
   id: tech
   displayName: Tech
-  compatibleEnergyTypes:
+  compatibleEnergyPlaceables:
   - {fileID: 11400000, guid: ad133d9289e9be445b0b7dc6531d75fa, type: 2}

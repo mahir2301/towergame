@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Shared;
 using Shared.Data;
-using Shared.Grid;
 using Shared.Runtime;
 using Shared.Runtime.Placeables;
 using Shared.Utilities;
@@ -14,8 +13,8 @@ namespace Server.Managers
     {
         public static EnergyNetworkManager Instance { get; private set; }
 
-        private readonly List<EnergyRuntime> energyNodes = new();
-        private readonly Dictionary<ulong, TowerRuntime> activeAntennas = new();
+        private readonly List<EnergySourceRuntime> energyNodes = new();
+        private readonly Dictionary<ulong, AntennaRuntime> activeAntennas = new();
         private readonly Dictionary<ulong, ulong> towerToEnergy = new();
         private readonly SubscriptionGroup subscriptions = new();
 
@@ -65,27 +64,27 @@ namespace Server.Managers
             SingletonUtility.ClearIfCurrent(Instance, this, () => Instance = null);
         }
 
-        private void RegisterEnergyRuntime(EnergyRuntime runtime)
+        private void RegisterEnergyRuntime(EnergySourceRuntime sourceRuntime)
         {
-            if (runtime == null)
+            if (sourceRuntime == null)
                 return;
 
-            if (energyNodes.Contains(runtime))
+            if (energyNodes.Contains(sourceRuntime))
                 return;
 
-            energyNodes.Add(runtime);
+            energyNodes.Add(sourceRuntime);
         }
 
-        private void UnregisterEnergyRuntime(EnergyRuntime runtime)
+        private void UnregisterEnergyRuntime(EnergySourceRuntime sourceRuntime)
         {
-            if (runtime == null)
+            if (sourceRuntime == null)
                 return;
 
-            energyNodes.Remove(runtime);
+            energyNodes.Remove(sourceRuntime);
 
             var toDisconnect = new List<ulong>();
             foreach (var kvp in towerToEnergy)
-                if (kvp.Value == runtime.NetworkObjectId)
+                if (kvp.Value == sourceRuntime.NetworkObjectId)
                     toDisconnect.Add(kvp.Key);
 
             foreach (var towerId in toDisconnect)
@@ -111,7 +110,7 @@ namespace Server.Managers
 
         private void OnPlaceableSpawned(PlaceableBehavior placeable)
         {
-            if (placeable is EnergyRuntime energy)
+            if (placeable is EnergySourceRuntime energy)
             {
                 RegisterEnergyRuntime(energy);
                 return;
@@ -123,7 +122,7 @@ namespace Server.Managers
 
         private void OnPlaceableDespawned(PlaceableBehavior placeable)
         {
-            if (placeable is EnergyRuntime energy)
+            if (placeable is EnergySourceRuntime energy)
             {
                 UnregisterEnergyRuntime(energy);
                 return;
@@ -160,8 +159,8 @@ namespace Server.Managers
             tower.SetConnection(candidate.energy.NetworkObjectId, candidate.viaAntennaId);
             towerToEnergy[towerId] = candidate.energy.NetworkObjectId;
 
-            if (tower.IsAntenna)
-                activeAntennas[towerId] = tower;
+            if (tower.TryGetComponent<AntennaRuntime>(out var antenna))
+                activeAntennas[towerId] = antenna;
             return true;
         }
 
@@ -174,7 +173,7 @@ namespace Server.Managers
             activeAntennas.Clear();
             towerToEnergy.Clear();
 
-            var spawnedEnergies = FindObjectsByType<EnergyRuntime>(FindObjectsSortMode.None);
+            var spawnedEnergies = FindObjectsByType<EnergySourceRuntime>(FindObjectsSortMode.None);
             for (var i = 0; i < spawnedEnergies.Length; i++)
             {
                 var energy = spawnedEnergies[i];
@@ -215,7 +214,7 @@ namespace Server.Managers
             }
 
             // If this tower is an antenna, cascade disconnect all dependents
-            if (tower.IsAntenna)
+            if (tower.TryGetComponent<AntennaRuntime>(out _))
             {
                 DisconnectAntennaDependents(towerId);
                 activeAntennas.Remove(towerId);
@@ -261,10 +260,12 @@ namespace Server.Managers
 
             foreach (var kvp in activeAntennas)
             {
-                if (!kvp.Value.IsAntenna)
+                var antenna = kvp.Value;
+                var relayTower = antenna.GetComponent<TowerRuntime>();
+                if (relayTower == null)
                     continue;
 
-                if (Vector2Int.Distance(pos, kvp.Value.GridPosition) > kvp.Value.AntennaRange)
+                if (Vector2Int.Distance(pos, relayTower.GridPosition) > antenna.Range)
                     continue;
 
                 if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)) continue;
@@ -305,25 +306,27 @@ namespace Server.Managers
 
             foreach (var kvp in activeAntennas)
             {
-                if (!kvp.Value.IsAntenna)
+                var antenna = kvp.Value;
+                var relayTower = antenna.GetComponent<TowerRuntime>();
+                if (relayTower == null)
                     continue;
 
-                var range = kvp.Value.AntennaRange;
-                if (Vector2Int.Distance(pos, kvp.Value.GridPosition) > range) continue;
+                var range = antenna.Range;
+                if (Vector2Int.Distance(pos, relayTower.GridPosition) > range) continue;
 
                 if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)) continue;
                 var energy = FindEnergyNode(energyId);
                 if (energy != null && energy.CanConnectClass(classType) && energy.HasCapacity(energyCost))
-                    best = Mathf.Max(best, range - Vector2Int.Distance(pos, kvp.Value.GridPosition));
+                    best = Mathf.Max(best, range - Vector2Int.Distance(pos, relayTower.GridPosition));
             }
 
             return best;
         }
 
-        private (EnergyRuntime energy, ulong viaAntennaId) FindBestCandidate(
+        private (EnergySourceRuntime energy, ulong viaAntennaId) FindBestCandidate(
             Vector2Int pos, ClassType classType, int energyCost)
         {
-            EnergyRuntime best = null;
+            EnergySourceRuntime best = null;
             var bestDist = float.MaxValue;
             var bestAntenna = ulong.MaxValue;
 
@@ -341,17 +344,19 @@ namespace Server.Managers
 
             foreach (var kvp in activeAntennas)
             {
-                if (!kvp.Value.IsAntenna)
+                var antenna = kvp.Value;
+                var relayTower = antenna.GetComponent<TowerRuntime>();
+                if (relayTower == null)
                     continue;
 
-                var range = kvp.Value.AntennaRange;
-                if (Vector2Int.Distance(pos, kvp.Value.GridPosition) > range) continue;
+                var range = antenna.Range;
+                if (Vector2Int.Distance(pos, relayTower.GridPosition) > range) continue;
 
                 if (!towerToEnergy.TryGetValue(kvp.Key, out var energyId)) continue;
                 var energy = FindEnergyNode(energyId);
                 if (energy == null || !energy.CanConnectClass(classType) || !energy.HasCapacity(energyCost)) continue;
 
-                var dist = Vector2Int.Distance(pos, kvp.Value.GridPosition);
+                var dist = Vector2Int.Distance(pos, relayTower.GridPosition);
                 if (dist < bestDist)
                 {
                     bestDist = dist;
@@ -363,7 +368,7 @@ namespace Server.Managers
             return (best, bestAntenna);
         }
 
-        private EnergyRuntime FindEnergyNode(ulong networkId)
+        private EnergySourceRuntime FindEnergyNode(ulong networkId)
         {
             foreach (var e in energyNodes)
                 if (e.NetworkObjectId == networkId)

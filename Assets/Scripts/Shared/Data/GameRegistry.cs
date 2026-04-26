@@ -19,8 +19,8 @@ namespace Shared.Data
         [SerializeField] private TileTypeRegistry tileTypes = new();
 
         [Header("Required Entity Types")]
-        [SerializeField] private string requiredPlayerEntityTypeId = "player";
-        [SerializeField] private string requiredProjectileEntityTypeId = "projectile";
+        [SerializeField] private EntityType requiredPlayerEntityType;
+        [SerializeField] private EntityType requiredProjectileEntityType;
 
         public IReadOnlyList<ClassType> ClassTypes => classTypes.Items;
         public IReadOnlyList<WeaponType> WeaponTypes => weaponTypes.Items;
@@ -28,8 +28,10 @@ namespace Shared.Data
         public IReadOnlyList<PlaceableType> PlaceableTypes => placeableTypes.Items;
         public IReadOnlyList<TagType> Tags => tagTypes.Items;
         public IReadOnlyList<TileType> TileTypes => tileTypes.Items;
-        public string RequiredPlayerEntityTypeId => requiredPlayerEntityTypeId;
-        public string RequiredProjectileEntityTypeId => requiredProjectileEntityTypeId;
+        public EntityType RequiredPlayerEntityType => requiredPlayerEntityType;
+        public EntityType RequiredProjectileEntityType => requiredProjectileEntityType;
+        public string RequiredPlayerEntityTypeId => requiredPlayerEntityType != null ? requiredPlayerEntityType.Id : string.Empty;
+        public string RequiredProjectileEntityTypeId => requiredProjectileEntityType != null ? requiredProjectileEntityType.Id : string.Empty;
 
         public ClassType GetClassType(string id) => classTypes.Get(id);
         public WeaponType GetWeaponType(string id) => weaponTypes.Get(id);
@@ -61,7 +63,7 @@ namespace Shared.Data
             if (!entityTypes.Validate(out issue))
                 return false;
 
-            if (!ValidateRequiredEntityTypeIds(out issue))
+            if (!ValidateRequiredEntityTypes(out issue))
                 return false;
 
             if (!tagTypes.Validate(out issue))
@@ -77,19 +79,17 @@ namespace Shared.Data
             return true;
         }
 
-        private bool ValidateRequiredEntityTypeIds(out string issue)
+        private bool ValidateRequiredEntityTypes(out string issue)
         {
-            if (string.IsNullOrWhiteSpace(requiredPlayerEntityTypeId)
-                || entityTypes.Get(requiredPlayerEntityTypeId) == null)
+            if (requiredPlayerEntityType == null)
             {
-                issue = $"Missing required player EntityType '{requiredPlayerEntityTypeId}'.";
+                issue = "Missing required player EntityType reference.";
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(requiredProjectileEntityTypeId)
-                || entityTypes.Get(requiredProjectileEntityTypeId) == null)
+            if (requiredProjectileEntityType == null)
             {
-                issue = $"Missing required projectile EntityType '{requiredProjectileEntityTypeId}'.";
+                issue = "Missing required projectile EntityType reference.";
                 return false;
             }
 
