@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &7540468346519600176
+--- !u!1001 &5605208760243815810
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -8,113 +8,113 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.125
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalScale.y
       value: 0.125
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalScale.z
       value: 0.125
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalPosition.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalRotation.w
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalRotation.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalRotation.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalRotation.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -8422967952908737300, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8422967952908737300, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -8029112942638063578, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - target: {fileID: -8029112942638063578, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       propertyPath: m_Name
-      value: Electricity
+      value: ArcaneEnergy
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: -8029112942638063578, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+    - targetCorrespondingSourceObject: {fileID: -8029112942638063578, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7393099338782338696}
-    - targetCorrespondingSourceObject: {fileID: -8029112942638063578, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+      addedObject: {fileID: 1215011649257897405}
+    - targetCorrespondingSourceObject: {fileID: -8029112942638063578, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 4682028111294094357}
-    - targetCorrespondingSourceObject: {fileID: -8029112942638063578, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
+      addedObject: {fileID: 6714252314148759718}
+    - targetCorrespondingSourceObject: {fileID: -8029112942638063578, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -7682199240391010882}
-  m_SourcePrefab: {fileID: 3150474306388093854, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
---- !u!1 &8662669841866529814 stripped
+      addedObject: {fileID: 4967156954302186181}
+  m_SourcePrefab: {fileID: 3150474306388093854, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
+--- !u!1 &6727093591944766884 stripped
 GameObject:
-  m_CorrespondingSourceObject: {fileID: -8029112942638063578, guid: 9e1edd43ad6c9ee458f4eea543dcbb09, type: 3}
-  m_PrefabInstance: {fileID: 7540468346519600176}
+  m_CorrespondingSourceObject: {fileID: -8029112942638063578, guid: 2312f2bbc2b77114a9029d96e95b66f9, type: 3}
+  m_PrefabInstance: {fileID: 5605208760243815810}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &7393099338782338696
+--- !u!114 &1215011649257897405
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8662669841866529814}
+  m_GameObject: {fileID: 6727093591944766884}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3789684336
+  GlobalObjectIdHash: 45452808
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
+  SceneMigrationSynchronization: 1
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &4682028111294094357
+--- !u!114 &6714252314148759718
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8662669841866529814}
+  m_GameObject: {fileID: 6727093591944766884}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 160c81070f4eb0d4a96c015dbfe495cd, type: 3}
@@ -124,13 +124,13 @@ MonoBehaviour:
   placeableTypeId: 
   energyRange: 20
   maxCapacity: 100
---- !u!65 &-7682199240391010882
+--- !u!65 &4967156954302186181
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8662669841866529814}
+  m_GameObject: {fileID: 6727093591944766884}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -143,5 +143,5 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 14, y: 9, z: 12}
-  m_Center: {x: 0, y: -3.5, z: 0}
+  m_Size: {x: 16, y: 16, z: 16}
+  m_Center: {x: 0, y: 0, z: 0}

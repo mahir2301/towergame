@@ -72,7 +72,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Shared::Shared.Runtime.TowerRuntime
   ShowTopMostFoldoutHeaderGroup: 1
-  config: {fileID: 11400000, guid: 421f28447705cd047b369eefe485c64a, type: 2}
+  placeableTypeId: 
+  classType: {fileID: 0}
+  maxHealth: 100
+  energyCost: 20
+  antennaRange: 0
 --- !u!1001 &8030783142043386623
 PrefabInstance:
   m_ObjectHideFlags: 0

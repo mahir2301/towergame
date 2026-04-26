@@ -43,7 +43,10 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 29ed46033bd3db8439f829994f6717c3, type: 2}
     - {fileID: 11400000, guid: a62896ea46e0857499849867a2f8aabf, type: 2}
     - {fileID: 11400000, guid: 3bab7a44e7a0fbc419671d3f1496e918, type: 2}
+    - {fileID: 11400000, guid: 5350a96b342206d4aa80b4d76476d89f, type: 2}
+    - {fileID: 11400000, guid: 84b5938e82256d947935649fd41c262f, type: 2}
     - {fileID: 11400000, guid: 421f28447705cd047b369eefe485c64a, type: 2}
+    - {fileID: 11400000, guid: 3b2505c0233c5a44ba86db7f845b2088, type: 2}
   tagTypes:
     items: []
   tileTypes:

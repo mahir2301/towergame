@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2548930bb87b84f2999c89f54a2a0624, type: 3}
+  m_Name: LookOut
+  m_EditorClassIdentifier: Shared::Shared.Data.PlaceableType
+  id: 
+  displayName: 
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 6093275118471135638, guid: a5baa2be938931a4da09e75410ad6d13, type: 3}
+  size: {x: 2, y: 2}
+  allowedTileTypes: []
+  placementOffset: {x: 0, y: 0, z: 0}
+  buildCost: 0
+  sellValue: 0
+  tags: []
