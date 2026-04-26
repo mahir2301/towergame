@@ -17,7 +17,7 @@ MonoBehaviour:
   description: 
   icon: {fileID: 0}
   prefab: {fileID: 4029037979073732832, guid: 618c8394fdc181c48baafd8d69f14eab, type: 3}
-  size: {x: 1, y: 1}
+  size: {x: 2, y: 2}
   allowedTileTypes:
   - {fileID: 11400000, guid: 8c0b3fc29659042049b4490cbb91b512, type: 2}
   - {fileID: 11400000, guid: 4d4fb7babb778459b8143cd6b61f9b63, type: 2}

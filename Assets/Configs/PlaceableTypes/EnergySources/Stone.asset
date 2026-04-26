@@ -16,8 +16,8 @@ MonoBehaviour:
   displayName: Stone
   description: 
   icon: {fileID: 0}
-  prefab: {fileID: 3263715069909696678, guid: cd2d68519dcfb42aea84ccf77a7f0aa1, type: 3}
-  size: {x: 1, y: 1}
+  prefab: {fileID: 6800080163642467958, guid: d2769127cf40f964186daea5e0d181b3, type: 3}
+  size: {x: 2, y: 2}
   allowedTileTypes:
   - {fileID: 11400000, guid: 8c0b3fc29659042049b4490cbb91b512, type: 2}
   placementOffset: {x: 0, y: 0, z: 0}

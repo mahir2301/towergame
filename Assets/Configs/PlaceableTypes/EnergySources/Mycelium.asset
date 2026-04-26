@@ -16,8 +16,8 @@ MonoBehaviour:
   displayName: Mycelium
   description: 
   icon: {fileID: 0}
-  prefab: {fileID: 6893667234963368319, guid: 54f3a1f671e4a9c4889095761b7911e7, type: 3}
-  size: {x: 1, y: 1}
+  prefab: {fileID: 8954048556858214326, guid: 47f14bc146a87be44b12f8a526e416a4, type: 3}
+  size: {x: 2, y: 2}
   allowedTileTypes:
   - {fileID: 11400000, guid: 8c0b3fc29659042049b4490cbb91b512, type: 2}
   placementOffset: {x: 0, y: 0, z: 0}

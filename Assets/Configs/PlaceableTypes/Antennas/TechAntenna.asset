@@ -16,8 +16,8 @@ MonoBehaviour:
   displayName: Tech Antenna
   description: 
   icon: {fileID: 0}
-  prefab: {fileID: 3263715069909696678, guid: 99a47c2e6f4774b55ba6297e0f96328d, type: 3}
-  size: {x: 1, y: 1}
+  prefab: {fileID: 6467884770488200516, guid: 718c366c43f0fe54db470d22cd4409df, type: 3}
+  size: {x: 2, y: 2}
   allowedTileTypes:
   - {fileID: 11400000, guid: 8c0b3fc29659042049b4490cbb91b512, type: 2}
   placementOffset: {x: 0, y: 0, z: 0}
